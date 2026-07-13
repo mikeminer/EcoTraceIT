@@ -1,9 +1,12 @@
-export type PlanHandle = "free" | "pro" | "enterprise";
+export type PlanHandle = "free" | "starter" | "pro" | "enterprise";
 export const PLANS = {
   free: {name: "Free", orderLimit: 100, advancedReports: false, offset: false},
+  starter: {name: "Starter", orderLimit: 1000, advancedReports: true, offset: false},
   pro: {name: "Pro", orderLimit: Infinity, advancedReports: true, offset: true},
   enterprise: {name: "Enterprise", orderLimit: Infinity, advancedReports: true, offset: true},
 } as const;
+
+export const canUseCarbonNeutral = (plan: string) => plan === "pro" || plan === "enterprise";
 
 export async function verifyActiveSubscription(appId: string, shopId: string, expectedPlan: PlanHandle) {
   const token = process.env.PARTNER_API_TOKEN;

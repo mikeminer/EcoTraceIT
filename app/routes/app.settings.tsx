@@ -21,7 +21,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
     update: {},
   });
   const checkoutBadgeEnabled = form.get("checkoutBadgeEnabled") === "on";
-  const carbonNeutralEnabled = current.plan !== "free" && form.get("carbonNeutralEnabled") === "on";
+  const carbonNeutralEnabled = ["pro", "enterprise"].includes(current.plan) && form.get("carbonNeutralEnabled") === "on";
   try {
     await syncCheckoutConfig(admin, {checkoutBadgeEnabled, carbonNeutralEnabled, plan: current.plan});
   } catch (error) {
@@ -45,6 +45,7 @@ export default function Settings() {
   const settings = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
   const t = getCopy(settings.locale);
+  const carbonNeutralAvailable = ["pro", "enterprise"].includes(settings.plan);
   return (
     <s-page heading={t.settings}>
       {result?.ok && <s-banner tone="success">{t.saved}</s-banner>}
@@ -52,8 +53,8 @@ export default function Settings() {
       <Form method="post">
         <s-section heading={t.checkout}>
           <s-checkbox name="checkoutBadgeEnabled" defaultChecked={settings.checkoutBadgeEnabled} label={t.showEstimate} />
-          <s-checkbox name="carbonNeutralEnabled" defaultChecked={settings.carbonNeutralEnabled} disabled={settings.plan === "free"} label={t.enableNeutral} />
-          {settings.plan === "free" && <s-banner tone="info">{t.neutralPro}</s-banner>}
+          <s-checkbox name="carbonNeutralEnabled" defaultChecked={settings.carbonNeutralEnabled} disabled={!carbonNeutralAvailable} label={t.enableNeutral} />
+          {!carbonNeutralAvailable && <s-banner tone="info">{t.neutralPro}</s-banner>}
           <s-select name="defaultCarrier" label={t.defaultCarrier} value={settings.defaultCarrier}>
             <s-option value="standard">Standard</s-option><s-option value="express">Express</s-option>
             <s-option value="ev">Elettrico</s-option><s-option value="bike">Bici</s-option><s-option value="air">Aereo</s-option>

@@ -3,6 +3,7 @@ import {calculateCarbon} from "./carbon.server";
 import {suggestPackaging} from "./packaging.server";
 import {reserveOffset} from "./offset.server";
 import {reportOrderProcessed} from "./app-events.server";
+import {PLANS, type PlanHandle} from "./pricing.server";
 
 type ShopifyOrder = {
   admin_graphql_api_id?: string;
@@ -34,15 +35,16 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
     where: {shop_orderGid: {shop, orderGid}},
     select: {id: true},
   });
-  if (!existingOrder && settings.plan === "free") {
+  const plan = PLANS[settings.plan as PlanHandle] || PLANS.free;
+  if (!existingOrder && Number.isFinite(plan.orderLimit)) {
     const monthStart = new Date();
     monthStart.setUTCDate(1);
     monthStart.setUTCHours(0, 0, 0, 0);
     const monthlyOrders = await prisma.sustainabilityOrder.count({
       where: {shop, calculatedAt: {gte: monthStart}},
     });
-    if (monthlyOrders >= settings.monthlyOrderLimit) {
-      console.info(JSON.stringify({event: "free_plan_limit_reached", shop, orderGid, monthlyOrders}));
+    if (monthlyOrders >= plan.orderLimit) {
+      console.info(JSON.stringify({event: "plan_limit_reached", shop, plan: settings.plan, orderGid, monthlyOrders}));
       return {skipped: true as const, reason: "monthly_order_limit" as const};
     }
   }
