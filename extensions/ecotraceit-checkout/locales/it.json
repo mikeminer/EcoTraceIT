@@ -1,0 +1,10 @@
+{
+  "name": "EcoTraceIT Checkout",
+  "impact": "Impatto stimato: {{value}} kg CO₂e",
+  "packaging": "Packaging riciclabile consigliato da EcoTraceIT.",
+  "carbon_neutral": "Rendi la spedizione Carbon Neutral",
+  "offset_sandbox": "L'offset sarà registrato senza addebito finché il merchant non configura una variante.",
+  "update_error": "Impossibile aggiornare l’opzione Carbon Neutral. Riprova.",
+  "offset_variant_name": "Variante prodotto offset",
+  "offset_variant_description": "Variante Shopify opzionale usata per addebitare l'offset di carbonio."
+}

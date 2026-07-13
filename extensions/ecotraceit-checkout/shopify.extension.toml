@@ -1,0 +1,26 @@
+api_version = "2026-07"
+
+[[extensions]]
+name = "t:name"
+handle = "ecotraceit-checkout"
+uid = "7c7f4286-5e38-56eb-9f8f-2b1fd0ec19cb9875d08e"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.checkout.block.render"
+
+[[extensions.metafields]]
+namespace = "$app:ecotraceit"
+key = "checkout_config"
+
+[[extensions.metafields]]
+namespace = "$app:ecotraceit"
+key = "weight_grams"
+
+[extensions.settings]
+  [[extensions.settings.fields]]
+  key = "offsetVariantId"
+  type = "variant_reference"
+  name = "t:offset_variant_name"
+  description = "t:offset_variant_description"

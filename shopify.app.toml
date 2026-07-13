@@ -1,0 +1,46 @@
+client_id = "c7549ec466b102db9328dce2a31ec55b"
+application_url = "https://app.ecotraceit.com"
+embedded = true
+name = "EcoTraceIT"
+
+[build]
+automatically_update_urls_on_dev = true
+
+[access_scopes]
+scopes = "read_orders,write_orders,read_products,write_products"
+optional_scopes = []
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = ["https://app.ecotraceit.com/auth/callback"]
+
+[webhooks]
+api_version = "2026-07"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/create", "orders/updated"]
+  uri = "/webhooks/orders"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/scopes_update"]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "/webhooks/compliance"
+
+[shop.metafields.ecotraceit.checkout_config]
+name = "EcoTraceIT checkout configuration"
+description = "Controls the EcoTraceIT checkout badge and Carbon Neutral option."
+type = "json"
+access.admin = "merchant_read"
+
+[product.metafields.ecotraceit.weight_grams]
+name = "EcoTraceIT shipping weight"
+description = "Last known product shipping weight used for a fast checkout estimate."
+type = "number_integer"
+access.admin = "merchant_read"

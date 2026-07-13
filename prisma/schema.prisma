@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id String @id
+  shop String
+  state String
+  isOnline Boolean @default(false)
+  scope String?
+  expires DateTime?
+  accessToken String
+  userId BigInt?
+  firstName String?
+  lastName String?
+  email String?
+  accountOwner Boolean @default(false)
+  locale String?
+  collaborator Boolean? @default(false)
+  emailVerified Boolean? @default(false)
+  refreshToken String?
+  refreshTokenExpires DateTime?
+}
+
+model ShopSettings {
+  shop String @id
+  locale String @default("it")
+  plan String @default("free")
+  carbonPricePerKg Float @default(0.30)
+  carbonNeutralEnabled Boolean @default(false)
+  checkoutBadgeEnabled Boolean @default(true)
+  defaultCarrier String @default("standard")
+  monthlyOrderLimit Int @default(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders SustainabilityOrder[]
+}
+
+model SustainabilityOrder {
+  id String @id @default(cuid())
+  shop String
+  settings ShopSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  orderGid String
+  orderName String?
+  countryCode String?
+  postalCodePrefix String?
+  weightGrams Int
+  distanceKm Float
+  emissionsKg Float
+  baselineEmissionsKg Float
+  savingsKg Float @default(0)
+  carrier String
+  packagingCode String
+  offsetSelected Boolean @default(false)
+  offsetAmount Float @default(0)
+  calculatedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  productStats ProductStat[]
+  @@unique([shop, orderGid])
+  @@index([shop, calculatedAt])
+}
+
+model ProductStat {
+  id String @id @default(cuid())
+  orderId String
+  order SustainabilityOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productGid String?
+  title String
+  category String?
+  quantity Int
+  allocatedEmissionsKg Float
+  @@index([productGid])
+}
+
+model WebhookReceipt {
+  id String @id
+  topic String
+  shop String
+  receivedAt DateTime @default(now())
+}

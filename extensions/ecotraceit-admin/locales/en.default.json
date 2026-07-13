@@ -1,0 +1,13 @@
+{
+  "name": "EcoTraceIT Order Impact",
+  "load_error": "Unable to load the order's environmental data.",
+  "loading": "Loading environmental data…",
+  "pending": "The calculation will be available after the order webhook is processed.",
+  "packaging": "Packaging",
+  "material": "Material",
+  "label": "Environmental label",
+  "method": "Method",
+  "unavailable": "Unavailable",
+  "neutral": "Carbon Neutral",
+  "not_offset": "Offset not selected"
+}
