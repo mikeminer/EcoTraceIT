@@ -2,6 +2,9 @@ on: [push, pull_request]
 
 name: CI
 
+env:
+  DATABASE_URL: file:./dev.sqlite
+
 jobs:
   CI:
     name: Node ${{ matrix.node }} and npm
