@@ -1,8 +1,9 @@
 api_version = "2026-07"
 
 [[extensions]]
-name = "EcoPack AI Checkout"
-handle = "ecopack-checkout"
+name = "EcoTraceIT Checkout"
+handle = "ecotraceit-checkout"
+uid = "7c7f4286-5e38-56eb-9f8f-2b1fd0ec19cb9875d08e"
 type = "ui_extension"
 
 [[extensions.targeting]]

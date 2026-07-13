@@ -1,4 +1,4 @@
-# EcoPack AI
+# EcoTraceIT
 
 Shopify App embedded per e-commerce italiani: calcolo CO₂e, packaging riciclabile, opzione Carbon Neutral e report merchant. Usa il template React Router ufficiale Shopify 2026 (evoluzione Remix), Polaris web components, App Bridge, Session Token, Prisma e Shopify UI Extensions.
 
@@ -6,7 +6,7 @@ Shopify App embedded per e-commerce italiani: calcolo CO₂e, packaging riciclab
 
 - Formula CO₂e da peso, CAP/paese UE e corriere, più integrazione Carbon Interface con timeout e fallback.
 - Webhook idempotenti orders/create e orders/updated.
-- Metafield ordine ecopack_ai.co2_kg ed ecopack_ai.packaging.
+- Metafield ordine ecotraceit.co2_kg ed ecotraceit.packaging.
 - Suggerimento packaging ed etichetta ambientale IT/EN.
 - Dashboard mensile e statistiche prodotto.
 - Checkout UI Extension con badge e toggle offset; Admin Order Block; Theme App Extension.
@@ -61,19 +61,19 @@ Distribuire il server su hosting Node HTTPS e usare PostgreSQL gestito in produz
 
 ## GDPR e PPWR
 
-EcoPack AI conserva paese, prefisso CAP, peso e identificatori tecnici ordine/prodotto. shop/redact elimina i dati dello shop. Poiché non vengono memorizzati identificativi cliente, customers/data_request e customers/redact non esportano dati personali. Prima della submission pubblicare privacy policy, DPA, retention e subprocessors.
+EcoTraceIT conserva paese, prefisso CAP, peso e identificatori tecnici ordine/prodotto. shop/redact elimina i dati dello shop. Poiché non vengono memorizzati identificativi cliente, customers/data_request e customers/redact non esportano dati personali. Prima della submission pubblicare privacy policy, DPA, retention e subprocessors.
 
 Etichette e suggerimenti PPWR sono supporto operativo, non consulenza legale. Far validare materiali, codici e obblighi nazionali. Evitare claim assoluti come “zero impatto”.
 
 ## Listing App Store
 
-Titolo: EcoPack AI – CO₂ & Packaging
+Titolo: EcoTraceIT – CO₂ & Packaging
 
 Subtitle: Calcola CO₂, packaging sostenibile e offset per ogni ordine.
 
 Descrizione:
 
-EcoPack AI aiuta gli e-commerce italiani a trasformare i dati di spedizione in azioni concrete. Calcola automaticamente la CO₂e stimata usando peso, destinazione e modalità di consegna. Suggerisce un imballaggio riciclabile adatto e genera una proposta di etichetta ambientale in italiano e inglese.
+EcoTraceIT aiuta gli e-commerce italiani a trasformare i dati di spedizione in azioni concrete. Calcola automaticamente la CO₂e stimata usando peso, destinazione e modalità di consegna. Suggerisce un imballaggio riciclabile adatto e genera una proposta di etichetta ambientale in italiano e inglese.
 
 Mostra ai clienti un badge leggero durante il checkout e, con Pro, consente di scegliere una spedizione Carbon Neutral. La dashboard raccoglie emissioni, risparmio stimato, andamento mensile e prodotti a maggior impatto. Ideale per moda, beauty, food e home & living. La stima checkout è locale e veloce; l'elaborazione completa avviene dopo l'ordine.
 

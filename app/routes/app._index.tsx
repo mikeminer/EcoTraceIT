@@ -16,7 +16,7 @@ const kg = (value: number) => value.toLocaleString("it-IT", {maximumFractionDigi
 export default function Dashboard() {
   const {dashboard, settings} = useLoaderData<typeof loader>();
   return (
-    <s-page heading="EcoPack AI">
+    <s-page heading="EcoTraceIT">
       <s-button slot="primary-action" href="/app/settings">Configura</s-button>
       <s-section heading="Impatto ambientale">
         <s-grid gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap="base">

@@ -4,9 +4,9 @@ import {
 } from "@shopify/ui-extensions-react/checkout";
 import {useMemo, useState} from "react";
 
-export default reactExtension("purchase.checkout.block.render", () => <EcoPackCheckout />);
+export default reactExtension("purchase.checkout.block.render", () => <EcoTraceITCheckout />);
 
-function EcoPackCheckout() {
+function EcoTraceITCheckout() {
   const lines = useCartLines();
   const address = useShippingAddress();
   const settings = useSettings();
@@ -27,7 +27,7 @@ function EcoPackCheckout() {
   async function changeOffset(checked) {
     setBusy(true);
     const value = checked ? "true" : "false";
-    const attributeResult = await applyAttributeChange({type: "updateAttribute", key: "_ecopack_carbon_neutral", value});
+    const attributeResult = await applyAttributeChange({type: "updateAttribute", key: "_ecotraceit_carbon_neutral", value});
     if (attributeResult.type === "error") {
       setBusy(false);
       return;
@@ -45,7 +45,7 @@ function EcoPackCheckout() {
   return (
     <BlockStack spacing="base">
       <Banner status="success" title={"Impatto stimato: " + estimate.toFixed(2) + " kg CO₂e"}>
-        Packaging riciclabile consigliato da EcoPack AI.
+        Packaging riciclabile consigliato da EcoTraceIT.
       </Banner>
       <Checkbox checked={selected} disabled={busy} onChange={changeOffset}>
         Rendi la spedizione Carbon Neutral

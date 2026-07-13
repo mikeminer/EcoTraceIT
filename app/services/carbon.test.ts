@@ -2,7 +2,7 @@ import {describe, expect, it} from "vitest";
 import {calculateCarbon, estimateDistance} from "./carbon.server";
 import {suggestPackaging} from "./packaging.server";
 
-describe("EcoPack calculation", () => {
+describe("EcoTraceIT calculation", () => {
   it("uses Italian CAP distance bands", () => {
     expect(estimateDistance("IT", "20100")).toBe(180);
     expect(estimateDistance("IT", "90100")).toBeGreaterThan(500);

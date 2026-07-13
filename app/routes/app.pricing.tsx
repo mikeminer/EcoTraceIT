@@ -14,7 +14,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
     if (planHandle === "free") {
       verification = "free";
     } else {
-      const response = await admin.graphql("query EcoPackShopId { shop { id } }");
+      const response = await admin.graphql("query EcoTraceITShopId { shop { id } }");
       const json = await response.json() as {data?: {shop?: {id?: string}}};
       const shopId = json.data?.shop?.id;
       const appId = process.env.SHOPIFY_APP_ID;
@@ -36,14 +36,14 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 export default function Pricing() {
   const {plan, verification} = useLoaderData<typeof loader>();
   return (
-    <s-page heading="Piani EcoPack AI">
+    <s-page heading="Piani EcoTraceIT">
       <s-banner tone="info">Piano attivo: {plan.toUpperCase()}. Verifica: {verification}.</s-banner>
       <s-grid gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap="base">
         <s-section heading="Free"><s-heading>€0</s-heading><s-paragraph>100 ordini/mese, calcolo base e badge.</s-paragraph></s-section>
         <s-section heading="Pro"><s-heading>€29/mese</s-heading><s-paragraph>Report avanzati, offset e calcoli illimitati.</s-paragraph></s-section>
         <s-section heading="Enterprise"><s-heading>A consumo</s-heading><s-paragraph>Volumi elevati, tier graduati e supporto prioritario.</s-paragraph></s-section>
       </s-grid>
-      <s-button href="shopify://admin/charges/ecopack-ai/pricing_plans" variant="primary">Gestisci abbonamento su Shopify</s-button>
+      <s-button href="shopify://admin/charges/ecotraceit/pricing_plans" variant="primary">Gestisci abbonamento su Shopify</s-button>
     </s-page>
   );
 }

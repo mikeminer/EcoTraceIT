@@ -14,7 +14,7 @@ export default function PublicHome() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1>EcoPack AI</h1>
+        <h1>EcoTraceIT</h1>
         <p>L&apos;assistente sostenibilità per gli e-commerce italiani.</p>
         <ul>
           <li>Calcolo CO₂e automatico per ogni ordine</li>
@@ -24,7 +24,7 @@ export default function PublicHome() {
         {showForm && (
           <Form method="post" action="/auth/login">
             <label><span>Dominio del negozio</span><input name="shop" type="text" placeholder="negozio.myshopify.com" /></label>
-            <button type="submit">Installa EcoPack AI</button>
+            <button type="submit">Installa EcoTraceIT</button>
           </Form>
         )}
       </div>

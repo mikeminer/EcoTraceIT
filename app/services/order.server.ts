@@ -56,7 +56,7 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
     },
   });
   const offsetSelected = payload.note_attributes?.some((attribute) =>
-    attribute.name === "_ecopack_carbon_neutral" && attribute.value === "true",
+    attribute.name === "_ecotraceit_carbon_neutral" && attribute.value === "true",
   ) || false;
   if (offsetSelected) {
     try {
@@ -89,16 +89,16 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
       .filter((line) => line.product_id)
       .map((line) => ({
         ownerId: "gid://shopify/Product/" + line.product_id,
-        namespace: "ecopack_ai",
+        namespace: "ecotraceit",
         key: "last_order_co2_kg",
         type: "number_decimal",
         value: String(Math.round(carbon.emissionsKg * (line.quantity || 1) / totalQuantity * 1000) / 1000),
       }));
     const response = await graphql(
-      "mutation EcoPackMetafields($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { userErrors { field message } } }",
+      "mutation EcoTraceITMetafields($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { userErrors { field message } } }",
       {variables: {metafields: [
-        {ownerId: orderGid, namespace: "ecopack_ai", key: "co2_kg", type: "number_decimal", value: String(carbon.emissionsKg)},
-        {ownerId: orderGid, namespace: "ecopack_ai", key: "packaging", type: "single_line_text_field", value: packaging.code},
+        {ownerId: orderGid, namespace: "ecotraceit", key: "co2_kg", type: "number_decimal", value: String(carbon.emissionsKg)},
+        {ownerId: orderGid, namespace: "ecotraceit", key: "packaging", type: "single_line_text_field", value: packaging.code},
         ...productMetafields,
       ]}},
     );

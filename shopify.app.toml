@@ -1,7 +1,7 @@
-client_id = ""
-name = "EcoPack AI"
+client_id = "c7549ec466b102db9328dce2a31ec55b"
 application_url = "https://example.com"
 embedded = true
+name = "EcoTraceIT"
 
 [build]
 automatically_update_urls_on_dev = true
@@ -9,6 +9,8 @@ include_config_on_deploy = true
 
 [access_scopes]
 scopes = "read_orders,write_orders,read_products,write_products,write_app_data"
+optional_scopes = []
+use_legacy_install_flow = false
 
 [auth]
 redirect_urls = ["https://example.com/auth/callback"]

@@ -4,11 +4,11 @@ export default reactExtension("admin.order-details.block.render", () => <OrderIm
 
 function OrderImpact() {
   return (
-    <AdminBlock title="EcoPack AI">
+    <AdminBlock title="EcoTraceIT">
       <BlockStack gap="base">
         <Badge tone="success">Sustainability data active</Badge>
-        <Text>La stima CO₂e e il packaging vengono salvati nei metafield ecopack_ai dell&apos;ordine.</Text>
-        <Text>Apri EcoPack AI per report, dettaglio prodotti e compliance.</Text>
+        <Text>La stima CO₂e e il packaging vengono salvati nei metafield ecotraceit dell&apos;ordine.</Text>
+        <Text>Apri EcoTraceIT per report, dettaglio prodotti e compliance.</Text>
       </BlockStack>
     </AdminBlock>
   );

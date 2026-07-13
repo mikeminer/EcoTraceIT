@@ -48,7 +48,7 @@ export default function Settings() {
           <s-select name="locale" label="Lingua" value={settings.locale}>
             <s-option value="it">Italiano</s-option><s-option value="en">English</s-option>
           </s-select>
-          <s-paragraph>EcoPack AI conserva solo CAP abbreviato, paese, peso e riferimenti tecnici dell&apos;ordine. Nessun nome, email o indirizzo completo.</s-paragraph>
+          <s-paragraph>EcoTraceIT conserva solo CAP abbreviato, paese, peso e riferimenti tecnici dell&apos;ordine. Nessun nome, email o indirizzo completo.</s-paragraph>
         </s-section>
         <s-button slot="primary-action" type="submit" variant="primary">Salva</s-button>
       </Form>
