@@ -1,7 +1,7 @@
 api_version = "2026-07"
 
 [[extensions]]
-name = "EcoTraceIT Order Impact"
+name = "t:name"
 handle = "ecotraceit-admin-order"
 uid = "c42e8ed4-8937-5e1c-9745-e81ff1677ce055c64530"
 type = "ui_extension"

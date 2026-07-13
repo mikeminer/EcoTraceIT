@@ -1,0 +1,48 @@
+const copy = {
+  it: {
+    navDashboard: "Dashboard", navSettings: "Impostazioni", navPlans: "Piani",
+    configure: "Configura", impact: "Impatto ambientale", emissions: "Emissioni totali",
+    savings: "CO₂e risparmiata", orders: "Ordini analizzati", history: "Ultimi 6 mesi",
+    historyPro: "L'andamento storico e i report avanzati sono disponibili con Pro o Enterprise.",
+    noData: "I dati appariranno dopo il primo ordine.", products: "Prodotti a maggior impatto",
+    productsPro: "Passa a Pro per statistiche prodotto e categoria", categories: "Categorie a maggior impatto",
+    categoriesPro: "Disponibile con i report avanzati Pro ed Enterprise.", plan: "Piano",
+    monthlyUsage: "Utilizzo mensile", checkoutBadge: "Badge checkout", active: "attivo", inactive: "disattivato",
+    managePlan: "Gestisci piano", ppwr: "PPWR",
+    ppwrNotice: "Le etichette sono suggerimenti operativi. Verifica sempre gli obblighi applicabili con il consulente compliance.",
+    settings: "Impostazioni", saved: "Impostazioni salvate.", checkout: "Checkout",
+    showEstimate: "Mostra stima CO₂e al checkout", enableNeutral: "Abilita opzione Carbon Neutral (Pro)",
+    neutralPro: "L'offset al checkout è disponibile con Pro o Enterprise.", defaultCarrier: "Corriere predefinito",
+    offsetPrice: "Prezzo offset per kg (EUR)", languagePrivacy: "Lingua e privacy", language: "Lingua",
+    privacy: "EcoTraceIT conserva solo CAP abbreviato, paese, peso e riferimenti tecnici dell'ordine. Nessun nome, email o indirizzo completo.",
+    save: "Salva", pricing: "Piani EcoTraceIT", activePlan: "Piano attivo", verification: "Verifica",
+    freeDescription: "100 ordini/mese, calcolo base e badge.", proDescription: "Report avanzati, offset e calcoli illimitati.",
+    enterpriseDescription: "Volumi elevati, tier graduati e supporto prioritario.", usage: "A consumo",
+    manageShopify: "Gestisci abbonamento su Shopify",
+  },
+  en: {
+    navDashboard: "Dashboard", navSettings: "Settings", navPlans: "Plans",
+    configure: "Configure", impact: "Environmental impact", emissions: "Total emissions",
+    savings: "CO₂e saved", orders: "Orders analyzed", history: "Last 6 months",
+    historyPro: "Historical trends and advanced reports are available on Pro or Enterprise.",
+    noData: "Data will appear after the first order.", products: "Highest-impact products",
+    productsPro: "Upgrade to Pro for product and category statistics", categories: "Highest-impact categories",
+    categoriesPro: "Available with Pro and Enterprise advanced reports.", plan: "Plan",
+    monthlyUsage: "Monthly usage", checkoutBadge: "Checkout badge", active: "active", inactive: "disabled",
+    managePlan: "Manage plan", ppwr: "PPWR",
+    ppwrNotice: "Labels are operational suggestions. Always validate applicable requirements with your compliance advisor.",
+    settings: "Settings", saved: "Settings saved.", checkout: "Checkout",
+    showEstimate: "Show CO₂e estimate at checkout", enableNeutral: "Enable Carbon Neutral option (Pro)",
+    neutralPro: "Checkout offset is available on Pro or Enterprise.", defaultCarrier: "Default carrier",
+    offsetPrice: "Offset price per kg (EUR)", languagePrivacy: "Language and privacy", language: "Language",
+    privacy: "EcoTraceIT stores only a shortened postal code, country, weight and technical order references. No names, email addresses or full addresses.",
+    save: "Save", pricing: "EcoTraceIT plans", activePlan: "Active plan", verification: "Verification",
+    freeDescription: "100 orders/month, base calculation and badge.", proDescription: "Advanced reports, offset and unlimited calculations.",
+    enterpriseDescription: "High volumes, graduated tiers and priority support.", usage: "Usage-based",
+    manageShopify: "Manage subscription on Shopify",
+  },
+} as const;
+
+export function getCopy(locale?: string) {
+  return locale === "en" ? copy.en : copy.it;
+}

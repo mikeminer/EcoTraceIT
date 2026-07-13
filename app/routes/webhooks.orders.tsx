@@ -15,6 +15,9 @@ export const action = async ({request}: ActionFunctionArgs) => {
     await processOrder(shop, payload as never, admin || undefined);
     return new Response(null, {status: 200});
   } catch (error) {
+    // The delivery was not completed: release the idempotency key so that
+    // Shopify's retry can process the order instead of being discarded.
+    await prisma.webhookReceipt.delete({where: {id: webhookId}}).catch(() => undefined);
     console.error(JSON.stringify({event: "order_webhook_failed", shop, topic, message: error instanceof Error ? error.message : "unknown"}));
     return new Response(null, {status: 500});
   }

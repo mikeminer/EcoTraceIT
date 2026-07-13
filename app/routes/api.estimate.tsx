@@ -2,9 +2,11 @@ import type {ActionFunctionArgs} from "react-router";
 import {calculateCarbon} from "../services/carbon.server";
 import {suggestPackaging} from "../services/packaging.server";
 import {quoteOffset} from "../services/offset.server";
+import {authenticate} from "../shopify.server";
 
 export const action = async ({request}: ActionFunctionArgs) => {
   try {
+    await authenticate.admin(request);
     const body = await request.json() as Record<string, unknown>;
     const weightGrams = Number(body.weightGrams);
     const itemCount = Number(body.itemCount || 1);

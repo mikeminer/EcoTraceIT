@@ -4,6 +4,7 @@ import {boundary} from "@shopify/shopify-app-react-router/server";
 import {authenticate} from "../shopify.server";
 import prisma from "../db.server";
 import {getDashboard} from "../services/analytics.server";
+import {getCopy} from "../i18n";
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
@@ -15,28 +16,33 @@ const kg = (value: number) => value.toLocaleString("it-IT", {maximumFractionDigi
 
 export default function Dashboard() {
   const {dashboard, settings} = useLoaderData<typeof loader>();
+  const t = getCopy(settings.locale);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthlyUsage = dashboard.monthly.find((row) => row.month === currentMonth)?.orders || 0;
   return (
     <s-page heading="EcoTraceIT">
-      <s-button slot="primary-action" href="/app/settings">Configura</s-button>
-      <s-section heading="Impatto ambientale">
+      <s-button slot="primary-action" href="/app/settings">{t.configure}</s-button>
+      <s-section heading={t.impact}>
         <s-grid gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap="base">
           <s-box padding="base" background="subdued" borderRadius="base">
-            <s-text color="subdued">Emissioni totali</s-text>
+            <s-text color="subdued">{t.emissions}</s-text>
             <s-heading>{kg(dashboard.totals.emissions)} kg CO₂e</s-heading>
           </s-box>
           <s-box padding="base" background="subdued" borderRadius="base">
-            <s-text color="subdued">CO₂e risparmiata</s-text>
+            <s-text color="subdued">{t.savings}</s-text>
             <s-heading>{kg(dashboard.totals.savings)} kg</s-heading>
           </s-box>
           <s-box padding="base" background="subdued" borderRadius="base">
-            <s-text color="subdued">Ordini analizzati</s-text>
+            <s-text color="subdued">{t.orders}</s-text>
             <s-heading>{dashboard.orderCount}</s-heading>
           </s-box>
         </s-grid>
       </s-section>
-      <s-section heading="Ultimi 6 mesi">
-        {dashboard.monthly.length === 0 ? (
-          <s-banner tone="info">I dati appariranno dopo il primo ordine.</s-banner>
+      <s-section heading={t.history}>
+        {settings.plan === "free" ? (
+          <s-banner tone="info">{t.historyPro}</s-banner>
+        ) : dashboard.monthly.length === 0 ? (
+          <s-banner tone="info">{t.noData}</s-banner>
         ) : (
           <s-stack direction="block" gap="small">
             {dashboard.monthly.map((row) => (
@@ -52,18 +58,28 @@ export default function Dashboard() {
           </s-stack>
         )}
       </s-section>
-      <s-section heading="Prodotti a maggior impatto">
-        {dashboard.products.map((product) => (
-          <s-paragraph key={product.title}>{product.title}: {kg(product.emissions)} kg CO₂e ({product.quantity} unità)</s-paragraph>
-        ))}
+      <s-section heading={t.products}>
+        {settings.plan === "free" ? (
+          <s-link href="/app/pricing">{t.productsPro}</s-link>
+        ) : dashboard.products.map((product) => (
+            <s-paragraph key={product.title}>{product.title}: {kg(product.emissions)} kg CO₂e ({product.quantity} unità)</s-paragraph>
+          ))}
       </s-section>
-      <s-section slot="aside" heading="Piano">
+      <s-section heading={t.categories}>
+        {settings.plan === "free" ? (
+          <s-paragraph>{t.categoriesPro}</s-paragraph>
+        ) : dashboard.categories.map((category) => (
+            <s-paragraph key={category.category}>{category.category}: {kg(category.emissions)} kg CO₂e ({category.quantity} unità)</s-paragraph>
+          ))}
+      </s-section>
+      <s-section slot="aside" heading={t.plan}>
         <s-badge tone={settings.plan === "free" ? "info" : "success"}>{settings.plan.toUpperCase()}</s-badge>
-        <s-paragraph>Checkout badge: {settings.checkoutBadgeEnabled ? "attivo" : "disattivato"}</s-paragraph>
-        <s-link href="/app/pricing">Gestisci piano</s-link>
+        {settings.plan === "free" && <s-paragraph>{t.monthlyUsage}: {monthlyUsage}/{settings.monthlyOrderLimit}</s-paragraph>}
+        <s-paragraph>{t.checkoutBadge}: {settings.checkoutBadgeEnabled ? t.active : t.inactive}</s-paragraph>
+        <s-link href="/app/pricing">{t.managePlan}</s-link>
       </s-section>
       <s-section slot="aside" heading="PPWR">
-        <s-paragraph>Le etichette sono suggerimenti operativi. Verifica sempre gli obblighi applicabili con il consulente compliance.</s-paragraph>
+        <s-paragraph>{t.ppwrNotice}</s-paragraph>
       </s-section>
     </s-page>
   );

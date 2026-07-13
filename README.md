@@ -1,90 +1,184 @@
 # EcoTraceIT
 
-Shopify App embedded per e-commerce italiani: calcolo CO₂e, packaging riciclabile, opzione Carbon Neutral e report merchant. Usa il template React Router ufficiale Shopify 2026 (evoluzione Remix), Polaris web components, App Bridge, Session Token, Prisma e Shopify UI Extensions.
+EcoTraceIT è un’app Shopify embedded per e-commerce italiani: calcola la CO₂e degli ordini, suggerisce packaging riciclabile ed etichette ambientali, offre l’opzione Carbon Neutral e genera report merchant per marketing e compliance.
 
-## Incluso
+Il progetto usa Shopify React Router (successore ufficiale del template Remix), App Bridge, Polaris web components, Session Token, Prisma e Shopify UI Extensions. Runtime, webhook ed estensioni sono allineati alla versione Shopify `2026-07`.
 
-- Formula CO₂e da peso, CAP/paese UE e corriere, più integrazione Carbon Interface con timeout e fallback.
-- Webhook idempotenti orders/create e orders/updated.
-- Metafield ordine ecotraceit.co2_kg ed ecotraceit.packaging.
-- Suggerimento packaging ed etichetta ambientale IT/EN.
-- Dashboard mensile e statistiche prodotto.
-- Checkout UI Extension con badge e toggle offset; Admin Order Block; Theme App Extension.
-- Shopify App Pricing Free, Pro €29/mese ed Enterprise usage-based.
-- Webhook privacy e minimizzazione GDPR: nessun nome, email o indirizzo completo.
+## Funzionalità
+
+- Stima CO₂e da peso, paese/CAP, distanza e modalità di trasporto.
+- Carbon Interface opzionale con timeout e fallback automatico alla formula locale.
+- Suggerimento packaging con formato, materiale, contenuto riciclato, risparmio ed etichetta IT/EN.
+- Checkout UI Extension con badge rapido e opzione Carbon Neutral.
+- Variante Shopify opzionale per addebitare l’offset nel carrello.
+- Dashboard mensile, KPI, classifiche prodotto e categoria.
+- Admin Order Block con CO₂e, packaging, etichetta, metodo e stato offset reali.
+- Theme App Extension per mostrare il badge sostenibilità nello storefront.
+- Webhook idempotenti `orders/create` e `orders/updated`, con retry sicuro.
+- Metafield ordine/prodotto `ecotraceit.*` e configurazione checkout app-owned.
+- Shopify App Pricing: Free, Pro e Enterprise usage-based tramite App Events API.
+- Localizzazione italiana e inglese.
+- Minimizzazione GDPR e webhook privacy obbligatori.
+
+## Struttura
+
+```text
+app/
+  routes/                  dashboard, settings, pricing, API e webhook
+  services/                carbon, packaging, offset, analytics, pricing, App Events
+extensions/
+  ecotraceit-checkout/     Checkout UI Extension
+  ecotraceit-admin/        Admin Order Block
+  ecotraceit-badge/        Theme App Extension
+prisma/
+  migrations/              schema sessioni, ordini e statistiche
+  schema.prisma
+shopify.app.toml           scope, webhook e definizioni metafield
+Dockerfile                 runtime Node 22 per produzione
+```
 
 ## Avvio locale
 
-Requisiti: Node 22.12+ (richiesto dalla Shopify CLI 4), Shopify CLI e development store.
+Requisiti: Node `22.12+`, npm, Shopify CLI 4.4+ e un development store.
 
-~~~powershell
+```powershell
 Copy-Item .env.example .env
-npm install
-npm run setup
-npm run dev
-~~~
-
-Eseguire shopify app config link per collegare il progetto e sostituire client_id/URL. Aggiungere i blocchi checkout e tema dagli editor Shopify.
-
-## Chiavi API
-
-- CARBON_API_PROVIDER=formula: calcolo locale.
-- CARBON_API_PROVIDER=carbon-interface e CARBON_INTERFACE_API_KEY: provider esterno con fallback.
-- OPENROUTESERVICE_API_KEY: placeholder per routing futuro, solo server.
-- OFFSET_API_URL e OFFSET_API_KEY: provider offset; senza valori funziona in sandbox.
-- offsetVariantId nelle impostazioni dell'estensione: GID della variante Shopify usata come extra pagabile.
-
-Non esporre segreti nelle estensioni, nei TOML o nei metafield pubblici.
-
-## Shopify App Pricing
-
-Configurare nel Dev Dashboard/submission form:
-
-1. free: €0, 100 ordini/mese.
-2. pro: €29 EUR/mese, report avanzati, offset e calcoli illimitati.
-3. enterprise: ricorrente più usage meter con tier graduati.
-
-Redirect post-selezione: /app/pricing. La route acquisisce plan_handle. Prima della produzione completare la verifica autorevole con Partner API usando PARTNER_API_TOKEN, SHOPIFY_ORGANIZATION_ID e SHOPIFY_APP_ID. Non viene usata la Billing API legacy.
-
-## Deploy
-
-~~~powershell
 npm ci
 npm run setup
+npm run dev
+```
+
+Il progetto è collegato all’app Dev Dashboard **EcoTraceIT**. `shopify app dev` crea il tunnel HTTPS, aggiorna temporaneamente gli URL e consente l’anteprima delle estensioni.
+
+## Variabili e chiavi API
+
+| Variabile | Uso |
+|---|---|
+| `SHOPIFY_API_KEY` | Client ID dell’app Shopify. |
+| `SHOPIFY_API_SECRET` | Segreto Shopify; solo secret manager o `.env`, mai Git. |
+| `SHOPIFY_APP_URL` | URL HTTPS pubblico del backend. |
+| `DATABASE_URL` | SQLite locale o file su volume persistente. |
+| `CARBON_API_PROVIDER` | `formula` oppure `carbon-interface`. |
+| `CARBON_INTERFACE_API_KEY` | Chiave Carbon Interface opzionale. |
+| `OPENROUTESERVICE_API_KEY` | Placeholder per un futuro routing stradale più preciso. |
+| `OFFSET_API_URL`, `OFFSET_API_KEY` | Provider offset; se assenti usa la modalità sandbox. |
+| `PARTNER_API_TOKEN` | Token Partner API con permesso **Manage apps**. |
+| `SHOPIFY_ORGANIZATION_ID` | ID organizzazione Dev Dashboard. |
+| `SHOPIFY_APP_ID` | ID app Partner; il codice accetta numero o GID. |
+| `APP_EVENTS_ORDER_HANDLE` | Meter Enterprise, default `order_processed`. |
+
+Non esporre chiavi nelle estensioni, nei TOML o nei metafield.
+
+## Deploy del backend
+
+Shopify ospita le estensioni, non il backend. Distribuire prima il container su un host Node/Docker HTTPS con disco persistente.
+
+```powershell
+docker build -t ecotraceit .
+docker run --rm -p 3000:3000 `
+  -e SHOPIFY_API_KEY=... `
+  -e SHOPIFY_API_SECRET=... `
+  -e SHOPIFY_APP_URL=https://app.example.com `
+  -e SCOPES=read_orders,write_orders,read_products,write_products,write_app_data `
+  -e DATABASE_URL=file:/data/ecotraceit.sqlite `
+  -v ecotraceit-data:/data `
+  ecotraceit
+```
+
+Il container esegue automaticamente `prisma migrate deploy` prima dell’avvio. Configurare il health check su `/healthz`. Per più repliche o volumi elevati migrare Prisma a PostgreSQL gestito prima dello scale-out; SQLite richiede una sola replica con volume persistente.
+
+Dopo il deploy:
+
+1. Sostituire `https://example.com` in `shopify.app.toml` con l’URL reale.
+2. Impostare il callback su `https://HOST/auth/callback`.
+3. Aggiornare `SHOPIFY_APP_URL` nel secret manager dell’host.
+4. Verificare `https://HOST/healthz`.
+5. Eseguire la validazione e caricare la versione Shopify:
+
+```powershell
+npm ci
+npm run setup
+npm run lint
 npm run typecheck
 npm test
 npm run build
+shopify app build
 shopify app deploy
-~~~
+```
 
-Distribuire il server su hosting Node HTTPS e usare PostgreSQL gestito in produzione, cambiando provider Prisma e DATABASE_URL. Poi configurare SHOPIFY_APP_URL, distribuire le estensioni, reinstallare dopo modifiche scope e testare webhook, checkout, uninstall e privacy.
+6. Reinstallare l’app nel dev store dopo modifiche agli scope.
+7. Testare ordine creato/aggiornato, retry webhook, uninstall, privacy, checkout, offset e downgrade.
+
+Non rilasciare una versione Dev Dashboard con `example.com`: webhook e OAuth non sarebbero raggiungibili.
+
+## Shopify App Pricing
+
+Configurare nella submission Shopify:
+
+1. **Free** — €0, 100 ordini/mese, calcolo base e badge.
+2. **Pro** — €29 EUR/mese, report avanzati, offset e calcoli illimitati.
+3. **Enterprise** — piano mensile più meter usage-based a tier graduati.
+4. **Private test plan** — €0 per il collaudo nel development store.
+
+Welcome link relativo: `/app/pricing`. Shopify aggiunge `plan_handle`; EcoTraceIT conferma il contratto con `activeSubscription` sulla Partner API 2026-07. Usare gli item handle `pro` ed `enterprise`. Per Enterprise creare un meter con handle esatto `order_processed`: ogni nuovo ordine genera un App Event idempotente con `value: 1`.
+
+Se Shopify assegna un app handle diverso da `ecotraceit`, aggiornare il link `shopify://admin/charges/.../pricing_plans` in `app/routes/app.pricing.tsx`.
+
+## Checkout e compatibilità piani Shopify
+
+`purchase.checkout.block.render` è disponibile nelle fasi information/shipping/payment solo per merchant Shopify Plus. Per store non-Plus usare il badge della Theme App Extension nel prodotto/storefront; indicare chiaramente questo requisito nel listing. La stima checkout è locale e non effettua round-trip esterni, quindi non rallenta il checkout.
+
+Il merchant abilita il blocco dall’editor Checkout e sceglie una variante prodotto opzionale per il costo offset. Le impostazioni EcoTraceIT vengono sincronizzate in un metafield app-owned dello shop.
 
 ## GDPR e PPWR
 
-EcoTraceIT conserva paese, prefisso CAP, peso e identificatori tecnici ordine/prodotto. shop/redact elimina i dati dello shop. Poiché non vengono memorizzati identificativi cliente, customers/data_request e customers/redact non esportano dati personali. Prima della submission pubblicare privacy policy, DPA, retention e subprocessors.
+EcoTraceIT conserva shop, ID tecnici, nome tecnico ordine, paese, prime due cifre del CAP, peso e dati ambientali. Non memorizza nome cliente, email, telefono o indirizzo completo. `shop/redact` ed uninstall eliminano sessioni, impostazioni, ordini aggregati e ricevute webhook dello shop.
 
-Etichette e suggerimenti PPWR sono supporto operativo, non consulenza legale. Far validare materiali, codici e obblighi nazionali. Evitare claim assoluti come “zero impatto”.
+Prima della submission pubblicare privacy policy, termini, DPA, retention policy, subprocessors e contatto supporto. Richiedere solo i livelli di protected customer data realmente necessari.
 
-## Listing App Store
+Le etichette e i suggerimenti PPWR sono supporto operativo, non consulenza legale. Validare materiali, codici e obblighi applicabili con un consulente; evitare claim assoluti come “zero impatto”.
 
-Titolo: EcoTraceIT – CO₂ & Packaging
+## Listing Shopify App Store
 
-Subtitle: Calcola CO₂, packaging sostenibile e offset per ogni ordine.
+**Titolo**
 
-Descrizione:
+EcoTraceIT: CO₂ & Packaging
 
-EcoTraceIT aiuta gli e-commerce italiani a trasformare i dati di spedizione in azioni concrete. Calcola automaticamente la CO₂e stimata usando peso, destinazione e modalità di consegna. Suggerisce un imballaggio riciclabile adatto e genera una proposta di etichetta ambientale in italiano e inglese.
+**Subtitle**
 
-Mostra ai clienti un badge leggero durante il checkout e, con Pro, consente di scegliere una spedizione Carbon Neutral. La dashboard raccoglie emissioni, risparmio stimato, andamento mensile e prodotti a maggior impatto. Ideale per moda, beauty, food e home & living. La stima checkout è locale e veloce; l'elaborazione completa avviene dopo l'ordine.
+Calcola CO₂e, migliora il packaging e offri spedizioni Carbon Neutral.
 
-Keyword: sostenibilità, CO2, carbon neutral, packaging, PPWR, etichetta ambientale, emissioni, ESG, spedizioni.
+**Descrizione lunga**
+
+EcoTraceIT aiuta gli e-commerce italiani a trasformare ogni spedizione in dati ambientali chiari e azioni concrete. Calcola automaticamente la CO₂e stimata di ogni ordine usando peso, destinazione e modalità di consegna, quindi suggerisce un imballaggio riciclabile adatto al contenuto.
+
+Genera una proposta di etichetta ambientale in italiano o inglese e salva i risultati nei metafield Shopify. I merchant possono consultare emissioni, risparmio stimato, trend mensili e prodotti o categorie a maggior impatto direttamente nella dashboard.
+
+Con Pro, EcoTraceIT abilita l’opzione Carbon Neutral e i report avanzati. Enterprise aggiunge pricing a consumo per volumi elevati. La stima checkout viene eseguita localmente per mantenere l’esperienza veloce, mentre il calcolo completo e i report vengono aggiornati dopo l’ordine.
+
+Ideale per moda, beauty, food e home & living. EcoTraceIT applica minimizzazione dei dati e strumenti operativi per PPWR; le stime non sostituiscono una verifica LCA o una consulenza legale.
+
+**Keyword**
+
+sostenibilità, CO2, carbon neutral, packaging, PPWR, etichetta ambientale, emissioni, ESG, spedizioni, compliance
 
 ## Immagini promozionali
 
-1. Hero 1600×900 con KPI dashboard.
-2. Checkout con badge e toggle Carbon Neutral.
-3. Packaging con busta riciclata, scatola FSC ed etichetta.
-4. Report mensile e prodotti ad alto impatto.
-5. Metafield ordine e messaggio privacy.
+1. Icona 1200×1200: foglia/traccia circolare, fondo verde bosco, forme semplici e leggibili a 48 px.
+2. Hero 1600×900: dashboard con emissioni, risparmio e ordini analizzati.
+3. Checkout 1600×900: badge CO₂e e toggle Carbon Neutral, con nota “Shopify Plus”.
+4. Packaging 1600×900: busta riciclata, scatola FSC ed etichetta ambientale.
+5. Report 1600×900: andamento mensile e classifiche prodotto/categoria.
+6. Admin 1600×900: blocco ordine con CO₂e, materiale, etichetta e offset.
 
-Palette: verde bosco #174C2B, salvia #E6F4EA, terra #9A6B45, fondo #F7F6F2. Usare screenshot reali del dev store.
+Palette: verde bosco `#174C2B`, salvia `#E6F4EA`, terra `#9A6B45`, fondo `#F7F6F2`. Usare solo screenshot reali del dev store, senza dati cliente o claim non verificabili.
+
+## Stato verifiche
+
+- ESLint senza errori.
+- TypeScript strict.
+- Test Vitest formula CO₂e.
+- Build React Router client/SSR.
+- Prisma schema validation.
+- Build Checkout, Admin e Theme App Extension.
+- CI GitHub su Node 22 e Node 24.

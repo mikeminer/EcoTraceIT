@@ -8,6 +8,7 @@ export const action = async ({request}: ActionFunctionArgs) => {
   await db.$transaction([
     db.shopSettings.deleteMany({where: {shop}}),
     db.session.deleteMany({where: {shop}}),
+    db.webhookReceipt.deleteMany({where: {shop}}),
   ]);
   return new Response(null, {status: 200});
 };

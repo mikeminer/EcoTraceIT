@@ -33,3 +33,15 @@ api_version = "2026-07"
   [[webhooks.subscriptions]]
   compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
   uri = "/webhooks/compliance"
+
+[shop.metafields.ecotraceit.checkout_config]
+name = "EcoTraceIT checkout configuration"
+description = "Controls the EcoTraceIT checkout badge and Carbon Neutral option."
+type = "json"
+access.admin = "merchant_read"
+
+[product.metafields.ecotraceit.weight_grams]
+name = "EcoTraceIT shipping weight"
+description = "Last known product shipping weight used for a fast checkout estimate."
+type = "number_integer"
+access.admin = "merchant_read"

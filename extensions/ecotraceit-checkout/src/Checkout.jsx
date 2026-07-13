@@ -1,6 +1,6 @@
 import {
   reactExtension, Banner, BlockStack, Checkbox, Text, useApplyAttributeChange,
-  useApplyCartLinesChange, useCartLines, useSettings, useShippingAddress,
+  useApplyCartLinesChange, useAppMetafields, useAttributeValues, useCartLines, useSettings, useShippingAddress, useTranslate,
 } from "@shopify/ui-extensions-react/checkout";
 import {useMemo, useState} from "react";
 
@@ -10,47 +10,79 @@ function EcoTraceITCheckout() {
   const lines = useCartLines();
   const address = useShippingAddress();
   const settings = useSettings();
+  const translate = useTranslate();
   const applyAttributeChange = useApplyAttributeChange();
   const applyCartLinesChange = useApplyCartLinesChange();
-  const [selected, setSelected] = useState(false);
+  const [neutralAttribute] = useAttributeValues(["_ecotraceit_carbon_neutral"]);
+  const [configEntry] = useAppMetafields({namespace: "$app:ecotraceit", key: "checkout_config", type: "shop"});
+  const weightEntries = useAppMetafields({namespace: "$app:ecotraceit", key: "weight_grams", type: "product"});
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const selected = neutralAttribute === "true";
+
+  const merchantConfig = useMemo(() => {
+    try {
+      return JSON.parse(configEntry?.metafield?.value || "{}");
+    } catch {
+      return {};
+    }
+  }, [configEntry?.metafield?.value]);
 
   const estimate = useMemo(() => {
+    const weightsByProduct = new Map(weightEntries.map((entry) => [entry.target.id, Number(entry.metafield.value)]));
     const grams = lines.reduce((sum, line) => {
-      const weight = Number(line.merchandise?.product?.metafield?.value || 500);
+      const weight = weightsByProduct.get(line.merchandise?.product?.id) || 500;
       return sum + weight * line.quantity;
     }, 0);
     const countryMultiplier = address?.countryCode === "IT" ? 1 : 1.8;
     return Math.max(0.09, (0.08 + grams / 1000 * 0.07) * countryMultiplier);
-  }, [lines, address?.countryCode]);
+  }, [lines, address?.countryCode, weightEntries]);
 
   async function changeOffset(checked) {
     setBusy(true);
+    setError("");
     const value = checked ? "true" : "false";
-    const attributeResult = await applyAttributeChange({type: "updateAttribute", key: "_ecotraceit_carbon_neutral", value});
-    if (attributeResult.type === "error") {
+    try {
+      const attributeResult = await applyAttributeChange({type: "updateAttribute", key: "_ecotraceit_carbon_neutral", value});
+      if (attributeResult.type === "error") throw new Error(attributeResult.message);
+      const variantId = String(settings.offsetVariantId || "");
+      if (variantId) {
+        const existing = lines.find((line) => line.merchandise.id === variantId);
+        const cartResult = checked && !existing
+          ? await applyCartLinesChange({type: "addCartLine", merchandiseId: variantId, quantity: 1})
+          : !checked && existing
+            ? await applyCartLinesChange({type: "removeCartLine", id: existing.id, quantity: existing.quantity})
+            : undefined;
+        if (cartResult?.type === "error") {
+          await applyAttributeChange({
+            type: "updateAttribute",
+            key: "_ecotraceit_carbon_neutral",
+            value: checked ? "false" : "true",
+          });
+          throw new Error(cartResult.message);
+        }
+      }
+    } catch {
+      setError(translate("update_error"));
+    } finally {
       setBusy(false);
-      return;
     }
-    const variantId = String(settings.offsetVariantId || "");
-    if (variantId) {
-      const existing = lines.find((line) => line.merchandise.id === variantId);
-      if (checked && !existing) await applyCartLinesChange({type: "addCartLine", merchandiseId: variantId, quantity: 1});
-      if (!checked && existing) await applyCartLinesChange({type: "removeCartLine", id: existing.id, quantity: existing.quantity});
-    }
-    setSelected(checked);
-    setBusy(false);
   }
+
+  if (merchantConfig.checkoutBadgeEnabled === false) return null;
 
   return (
     <BlockStack spacing="base">
-      <Banner status="success" title={"Impatto stimato: " + estimate.toFixed(2) + " kg CO₂e"}>
-        Packaging riciclabile consigliato da EcoTraceIT.
+      <Banner status="success" title={translate("impact", {value: estimate.toFixed(2)})}>
+        {translate("packaging")}
       </Banner>
-      <Checkbox checked={selected} disabled={busy} onChange={changeOffset}>
-        Rendi la spedizione Carbon Neutral
-      </Checkbox>
-      {!settings.offsetVariantId && <Text size="small" appearance="subdued">L&apos;offset sarà registrato senza addebito finché il merchant non configura la variante.</Text>}
+      {error && <Banner status="critical">{error}</Banner>}
+      {merchantConfig.carbonNeutralEnabled === true && (
+        <Checkbox checked={selected} disabled={busy} onChange={changeOffset}>
+          {translate("carbon_neutral")}
+        </Checkbox>
+      )}
+      {merchantConfig.carbonNeutralEnabled === true && !settings.offsetVariantId && <Text size="small" appearance="subdued">{translate("offset_sandbox")}</Text>}
     </BlockStack>
   );
 }

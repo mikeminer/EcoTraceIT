@@ -23,7 +23,7 @@ jobs:
 
       - name: Run TypeScript type checking
         if: ${{ !startsWith(github.head_ref || github.ref_name, 'javascript') }}
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Run ESLint
         run: npm run lint

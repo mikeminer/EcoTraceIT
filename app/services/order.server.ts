@@ -2,6 +2,7 @@ import prisma from "../db.server";
 import {calculateCarbon} from "./carbon.server";
 import {suggestPackaging} from "./packaging.server";
 import {reserveOffset} from "./offset.server";
+import {reportOrderProcessed} from "./app-events.server";
 
 type ShopifyOrder = {
   admin_graphql_api_id?: string;
@@ -10,7 +11,7 @@ type ShopifyOrder = {
   total_weight?: number;
   shipping_address?: {country_code?: string; zip?: string};
   shipping_lines?: Array<{title?: string}>;
-  line_items?: Array<{product_id?: number; title?: string; quantity?: number}>;
+  line_items?: Array<{product_id?: number; title?: string; quantity?: number; grams?: number}>;
   note_attributes?: Array<{name?: string; value?: string}>;
 };
 
@@ -25,6 +26,26 @@ function detectCarrier(order: ShopifyOrder) {
 
 export async function processOrder(shop: string, payload: ShopifyOrder, admin?: unknown) {
   const orderGid = payload.admin_graphql_api_id || "gid://shopify/Order/" + payload.id;
+  const graphql = admin && typeof admin === "object" && "graphql" in admin
+    ? (admin as {graphql: (query: string, options: {variables: Record<string, unknown>}) => Promise<Response>}).graphql
+    : undefined;
+  const settings = await prisma.shopSettings.upsert({where: {shop}, create: {shop}, update: {}});
+  const existingOrder = await prisma.sustainabilityOrder.findUnique({
+    where: {shop_orderGid: {shop, orderGid}},
+    select: {id: true},
+  });
+  if (!existingOrder && settings.plan === "free") {
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const monthlyOrders = await prisma.sustainabilityOrder.count({
+      where: {shop, calculatedAt: {gte: monthStart}},
+    });
+    if (monthlyOrders >= settings.monthlyOrderLimit) {
+      console.info(JSON.stringify({event: "free_plan_limit_reached", shop, orderGid, monthlyOrders}));
+      return {skipped: true as const, reason: "monthly_order_limit" as const};
+    }
+  }
   const weightGrams = Math.max(100, payload.total_weight || 1000);
   const carrier = detectCarrier(payload);
   const carbon = await calculateCarbon({
@@ -38,7 +59,6 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
     itemCount: payload.line_items?.reduce((sum, line) => sum + (line.quantity || 1), 0) || 1,
   });
   const baseline = carbon.emissionsKg + packaging.estimatedSavingsKg;
-  await prisma.shopSettings.upsert({where: {shop}, create: {shop}, update: {}});
   const record = await prisma.sustainabilityOrder.upsert({
     where: {shop_orderGid: {shop, orderGid}},
     create: {
@@ -72,39 +92,99 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
   await prisma.productStat.deleteMany({where: {orderId: record.id}});
   const lines = payload.line_items || [];
   const totalQuantity = Math.max(1, lines.reduce((sum, line) => sum + (line.quantity || 1), 0));
+  const productCategories = new Map<string, string>();
+  if (graphql) {
+    const productIds = [...new Set(lines.flatMap((line) => line.product_id ? ["gid://shopify/Product/" + line.product_id] : []))];
+    if (productIds.length) {
+      const categoryResponse = await graphql(
+        "query EcoTraceITProductCategories($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id productType category { fullName } } } }",
+        {variables: {ids: productIds}},
+      );
+      const categoryJson = await categoryResponse.json() as {
+        data?: {nodes?: Array<{id?: string; productType?: string; category?: {fullName?: string}} | null>};
+        errors?: Array<{message: string}>;
+      };
+      if (categoryJson.errors?.length) {
+        console.warn(JSON.stringify({event: "product_category_lookup_failed", shop, errors: categoryJson.errors}));
+      }
+      for (const product of categoryJson.data?.nodes || []) {
+        if (product?.id) productCategories.set(product.id, product.category?.fullName || product.productType || "Non categorizzato");
+      }
+    }
+  }
   if (lines.length) {
     await prisma.productStat.createMany({data: lines.map((line) => ({
       orderId: record.id,
       productGid: line.product_id ? "gid://shopify/Product/" + line.product_id : null,
       title: line.title || "Product",
+      category: line.product_id ? productCategories.get("gid://shopify/Product/" + line.product_id) || "Non categorizzato" : "Non categorizzato",
       quantity: line.quantity || 1,
       allocatedEmissionsKg: carbon.emissionsKg * (line.quantity || 1) / totalQuantity,
     }))});
   }
-  if (admin && typeof admin === "object" && "graphql" in admin) {
-    const graphql = (admin as {
-      graphql: (query: string, options: {variables: Record<string, unknown>}) => Promise<Response>;
-    }).graphql;
-    const productMetafields = lines
-      .filter((line) => line.product_id)
-      .map((line) => ({
-        ownerId: "gid://shopify/Product/" + line.product_id,
-        namespace: "ecotraceit",
-        key: "last_order_co2_kg",
-        type: "number_decimal",
-        value: String(Math.round(carbon.emissionsKg * (line.quantity || 1) / totalQuantity * 1000) / 1000),
-      }));
-    const response = await graphql(
-      "mutation EcoTraceITMetafields($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { userErrors { field message } } }",
-      {variables: {metafields: [
+  if (graphql) {
+    const productImpacts = new Map<string, {emissionsKg: number; weightGrams: number}>();
+    for (const line of lines) {
+      if (!line.product_id) continue;
+      const productGid = "gid://shopify/Product/" + line.product_id;
+      const quantity = line.quantity || 1;
+      const existing = productImpacts.get(productGid) || {emissionsKg: 0, weightGrams: 0};
+      productImpacts.set(productGid, {
+        emissionsKg: existing.emissionsKg + carbon.emissionsKg * quantity / totalQuantity,
+        weightGrams: Math.max(existing.weightGrams, line.grams || Math.round(weightGrams / totalQuantity), 1),
+      });
+    }
+    const productMetafields = [...productImpacts.entries()].flatMap(([productGid, impact]) => [
+        {
+          ownerId: productGid,
+          namespace: "ecotraceit",
+          key: "co2_kg",
+          type: "number_decimal",
+          value: String(Math.round(impact.emissionsKg * 1000) / 1000),
+        },
+        {
+          ownerId: productGid,
+          namespace: "$app:ecotraceit",
+          key: "weight_grams",
+          type: "number_integer",
+          value: String(impact.weightGrams),
+        },
+      ]);
+    const metafields = [
         {ownerId: orderGid, namespace: "ecotraceit", key: "co2_kg", type: "number_decimal", value: String(carbon.emissionsKg)},
         {ownerId: orderGid, namespace: "ecotraceit", key: "packaging", type: "single_line_text_field", value: packaging.code},
+        {ownerId: orderGid, namespace: "ecotraceit", key: "packaging_label", type: "single_line_text_field", value: packaging.icon + " " + (settings.locale === "en" ? packaging.labelEn : packaging.labelIt)},
+        {ownerId: orderGid, namespace: "ecotraceit", key: "packaging_material", type: "single_line_text_field", value: packaging.material},
+        {ownerId: orderGid, namespace: "ecotraceit", key: "carbon_neutral", type: "boolean", value: String(offsetSelected)},
+        {ownerId: orderGid, namespace: "ecotraceit", key: "calculation_method", type: "single_line_text_field", value: carbon.method},
         ...productMetafields,
-      ]}},
-    );
-    const json = await response.json() as {data?: {metafieldsSet?: {userErrors?: Array<{message: string}>}}};
-    const errors = json.data?.metafieldsSet?.userErrors || [];
-    if (errors.length) console.error(JSON.stringify({event: "metafield_error", shop, errors}));
+      ];
+    // metafieldsSet accepts at most 25 entries. Batch large orders and fail the
+    // webhook delivery if Shopify rejects a batch so its retry can complete it.
+    for (let index = 0; index < metafields.length; index += 25) {
+      const response = await graphql(
+        "mutation EcoTraceITMetafields($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { userErrors { field message } } }",
+        {variables: {metafields: metafields.slice(index, index + 25)}},
+      );
+      const json = await response.json() as {
+        data?: {metafieldsSet?: {userErrors?: Array<{message: string}>}};
+        errors?: Array<{message: string}>;
+      };
+      const errors = [...(json.errors || []), ...(json.data?.metafieldsSet?.userErrors || [])];
+      if (errors.length) {
+        console.error(JSON.stringify({event: "metafield_error", shop, errors}));
+        throw new Error("Shopify rejected EcoTraceIT metafields");
+      }
+    }
+    if (settings.plan === "enterprise") {
+      const shopResponse = await graphql("query EcoTraceITAppEventShop { shop { id } }", {variables: {}});
+      const shopJson = await shopResponse.json() as {data?: {shop?: {id?: string}}};
+      const shopId = shopJson.data?.shop?.id;
+      if (!shopId) throw new Error("Shopify shop ID missing for Enterprise usage event");
+      await reportOrderProcessed(shopId, orderGid, weightGrams, carbon.emissionsKg);
+    }
+  } else if (settings.plan === "enterprise") {
+    throw new Error("Shopify admin client missing for Enterprise usage event");
   }
   return {record, carbon, packaging};
 }
