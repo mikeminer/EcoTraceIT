@@ -91,7 +91,7 @@ docker run --rm -p 3000:3000 `
   -e SHOPIFY_API_KEY=... `
   -e SHOPIFY_API_SECRET=... `
   -e SHOPIFY_APP_URL=https://app.ecotraceit.com `
-  -e SCOPES=read_orders,write_orders,read_products,write_products,write_app_data `
+  -e SCOPES=read_orders,write_orders,read_products,write_products `
   -e DATABASE_URL=postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require `
   ecotraceit
 ```

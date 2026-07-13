@@ -5,10 +5,9 @@ name = "EcoTraceIT"
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [access_scopes]
-scopes = "read_orders,write_orders,read_products,write_products,write_app_data"
+scopes = "read_orders,write_orders,read_products,write_products"
 optional_scopes = []
 use_legacy_install_flow = false
 
