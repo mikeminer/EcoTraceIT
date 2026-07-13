@@ -1,0 +1,10 @@
+api_version = "2026-07"
+
+[[extensions]]
+name = "EcoPack AI Order Impact"
+handle = "ecopack-admin-order"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/OrderBlock.jsx"
+target = "admin.order-details.block.render"

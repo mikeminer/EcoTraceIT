@@ -1,0 +1,20 @@
+api_version = "2026-07"
+
+[[extensions]]
+name = "EcoPack AI Checkout"
+handle = "ecopack-checkout"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.checkout.block.render"
+
+[extensions.capabilities]
+api_access = true
+
+[extensions.settings]
+  [[extensions.settings.fields]]
+  key = "offsetVariantId"
+  type = "single_line_text_field"
+  name = "Offset product variant GID"
+  description = "Optional Shopify variant used to charge the carbon offset."

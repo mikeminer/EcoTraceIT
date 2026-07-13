@@ -1,0 +1,23 @@
+{% liquid
+  assign co2 = product.metafields.ecopack_ai.co2_kg.value
+  assign label = block.settings.label
+%}
+<div
+  class="ecopack-badge"
+  role="status"
+  style="display:inline-flex;align-items:center;gap:.45rem;padding:.55rem .8rem;border-radius:999px;background:{{ block.settings.background }};color:{{ block.settings.foreground }};font-size:.875rem;font-weight:600"
+>
+  <span aria-hidden="true">♻</span>
+  <span>{{ label }}{% if co2 != blank %} · {{ co2 }} kg CO₂e{% endif %}</span>
+</div>
+{% schema %}
+{
+  "name": "EcoPack AI badge",
+  "target": "section",
+  "settings": [
+    {"type": "text", "id": "label", "label": "Label", "default": "Packaging sostenibile"},
+    {"type": "color", "id": "background", "label": "Sfondo", "default": "#E6F4EA"},
+    {"type": "color", "id": "foreground", "label": "Testo", "default": "#174C2B"}
+  ]
+}
+{% endschema %}
