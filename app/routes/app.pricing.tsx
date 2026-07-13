@@ -10,7 +10,7 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
   const {session, admin} = await authenticate.admin(request);
   const url = new URL(request.url);
   const planHandle = url.searchParams.get("plan_handle");
-  const allowed: PlanHandle[] = ["free", "starter", "pro", "enterprise"];
+  const allowed: PlanHandle[] = ["free", "pro", "enterprise"];
   let verification = "not-requested";
   if (planHandle && allowed.includes(planHandle as PlanHandle)) {
     if (planHandle === "free") {
@@ -48,8 +48,7 @@ export default function Pricing() {
       <s-banner tone="info">{t.activePlan}: {plan.toUpperCase()}. {t.verification}: {verification}.</s-banner>
       <s-grid gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap="base">
         <s-section heading="Free"><s-heading>€0</s-heading><s-paragraph>{t.freeDescription}</s-paragraph></s-section>
-        <s-section heading="Starter"><s-heading>€19/mese</s-heading><s-paragraph>{t.starterDescription}</s-paragraph></s-section>
-        <s-section heading="Pro"><s-heading>€49/mese</s-heading><s-paragraph>{t.proDescription}</s-paragraph></s-section>
+        <s-section heading="Pro"><s-heading>€29/mese</s-heading><s-paragraph>{t.proDescription}</s-paragraph></s-section>
         <s-section heading="Enterprise"><s-heading>{t.usage}</s-heading><s-paragraph>{t.enterpriseDescription}</s-paragraph></s-section>
       </s-grid>
       <s-button href="shopify://admin/charges/ecotraceit/pricing_plans" variant="primary">{t.manageShopify}</s-button>

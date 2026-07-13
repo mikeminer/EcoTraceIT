@@ -1,7 +1,6 @@
-export type PlanHandle = "free" | "starter" | "pro" | "enterprise";
+export type PlanHandle = "free" | "pro" | "enterprise";
 export const PLANS = {
   free: {name: "Free", orderLimit: 100, advancedReports: false, offset: false},
-  starter: {name: "Starter", orderLimit: 1000, advancedReports: true, offset: false},
   pro: {name: "Pro", orderLimit: Infinity, advancedReports: true, offset: true},
   enterprise: {name: "Enterprise", orderLimit: Infinity, advancedReports: true, offset: true},
 } as const;
