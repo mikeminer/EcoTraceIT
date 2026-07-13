@@ -57,7 +57,7 @@ Il progetto è collegato all’app Dev Dashboard **EcoTraceIT**. `shopify app de
 | `SHOPIFY_API_KEY` | Client ID dell’app Shopify. |
 | `SHOPIFY_API_SECRET` | Segreto Shopify; solo secret manager o `.env`, mai Git. |
 | `SHOPIFY_APP_URL` | URL HTTPS pubblico del backend. |
-| `DATABASE_URL` | SQLite locale o file su volume persistente. |
+| `DATABASE_URL` | PostgreSQL gestito; il progetto Vercel usa Neon con pooling. |
 | `CARBON_API_PROVIDER` | `formula` oppure `carbon-interface`. |
 | `CARBON_INTERFACE_API_KEY` | Chiave Carbon Interface opzionale. |
 | `OPENROUTESERVICE_API_KEY` | Placeholder per un futuro routing stradale più preciso. |
@@ -71,26 +71,37 @@ Non esporre chiavi nelle estensioni, nei TOML o nei metafield.
 
 ## Deploy del backend
 
-Shopify ospita le estensioni, non il backend. Distribuire prima il container su un host Node/Docker HTTPS con disco persistente.
+Shopify ospita le estensioni, non il backend. Il progetto è predisposto per Vercel SSR tramite `@vercel/react-router` e PostgreSQL Neon. Le variabili sensibili devono restare in Vercel, mai nel repository.
+
+```powershell
+vercel link --yes --scope mikeminers-projects --project ecotraceit
+vercel env pull .env.local --environment=production --yes
+$env:DATABASE_URL = (Get-Content .env.local | Select-String '^DATABASE_URL=').Line.Split('=', 2)[1].Trim('"')
+npm run setup
+vercel deploy --prod
+```
+
+Il deploy produzione usa `https://app.ecotraceit.com`. Su Register.it configurare il record `A` con host `app` e valore `76.76.21.21`, quindi verificare lo stato con `vercel domains inspect app.ecotraceit.com`.
+
+In alternativa, il container può essere distribuito su un host Node/Docker con PostgreSQL raggiungibile:
 
 ```powershell
 docker build -t ecotraceit .
 docker run --rm -p 3000:3000 `
   -e SHOPIFY_API_KEY=... `
   -e SHOPIFY_API_SECRET=... `
-  -e SHOPIFY_APP_URL=https://app.example.com `
+  -e SHOPIFY_APP_URL=https://app.ecotraceit.com `
   -e SCOPES=read_orders,write_orders,read_products,write_products,write_app_data `
-  -e DATABASE_URL=file:/data/ecotraceit.sqlite `
-  -v ecotraceit-data:/data `
+  -e DATABASE_URL=postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require `
   ecotraceit
 ```
 
-Il container esegue automaticamente `prisma migrate deploy` prima dell’avvio. Configurare il health check su `/healthz`. Per più repliche o volumi elevati migrare Prisma a PostgreSQL gestito prima dello scale-out; SQLite richiede una sola replica con volume persistente.
+Il container esegue automaticamente `prisma migrate deploy` prima dell’avvio. Configurare il health check su `/healthz`. PostgreSQL consente replica e scale-out senza dipendere dal filesystem della singola istanza.
 
 Dopo il deploy:
 
-1. Sostituire `https://example.com` in `shopify.app.toml` con l’URL reale.
-2. Impostare il callback su `https://HOST/auth/callback`.
+1. Verificare in `shopify.app.toml` l’URL `https://app.ecotraceit.com`.
+2. Verificare il callback `https://app.ecotraceit.com/auth/callback`.
 3. Aggiornare `SHOPIFY_APP_URL` nel secret manager dell’host.
 4. Verificare `https://HOST/healthz`.
 5. Eseguire la validazione e caricare la versione Shopify:

@@ -1,5 +1,5 @@
 client_id = "c7549ec466b102db9328dce2a31ec55b"
-application_url = "https://example.com"
+application_url = "https://app.ecotraceit.com"
 embedded = true
 name = "EcoTraceIT"
 
@@ -13,7 +13,7 @@ optional_scopes = []
 use_legacy_install_flow = false
 
 [auth]
-redirect_urls = ["https://example.com/auth/callback"]
+redirect_urls = ["https://app.ecotraceit.com/auth/callback"]
 
 [webhooks]
 api_version = "2026-07"
