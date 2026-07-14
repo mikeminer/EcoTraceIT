@@ -184,7 +184,7 @@ export default function SupplyChain() {
           <label style={field}>Email professionale<input type="email" name="responsibleEmail" defaultValue={manufacturer?.responsibleEmail || ""} required style={input} /></label>
         </div>
         <label style={field}>Base dei poteri di firma<textarea name="authorityBasis" defaultValue={manufacturer?.authorityBasis || ""} minLength={10} rows={3} required style={input} placeholder="Es. legale rappresentante risultante dalla visura camerale…" /></label>
-        <p><button type="submit">Salva responsabile</button></p>
+        <p><s-button type="submit" variant="primary">Salva responsabile</s-button></p>
       </Form>
     </s-section>
 
@@ -193,9 +193,9 @@ export default function SupplyChain() {
         <s-heading>{supplier.supplierCode} · {supplier.legalName}</s-heading>
         <s-paragraph>{supplier.status} · {supplier.countryCode} · {supplier._count.components} componenti · {supplier._count.declarations} dichiarazioni</s-paragraph>
         {supplier.status !== "APPROVED" ? <Form method="post"><input type="hidden" name="intent" value="approveSupplier" /><input type="hidden" name="supplierId" value={supplier.id} />
-          <label><input type="checkbox" name="approvalAck" value="yes" required /> Ho verificato identità e documenti professionali.</label> <button type="submit">Approva</button>
+          <label><input type="checkbox" name="approvalAck" value="yes" required /> Ho verificato identità e documenti professionali.</label> <s-button type="submit">Approva</s-button>
         </Form> : <Form method="post"><input type="hidden" name="intent" value="suspendSupplier" /><input type="hidden" name="supplierId" value={supplier.id} />
-          <label><input type="checkbox" name="approvalAck" value="yes" required /> Confermo la sospensione.</label> <button type="submit">Sospendi</button>
+          <label><input type="checkbox" name="approvalAck" value="yes" required /> Confermo la sospensione.</label> <s-button type="submit" tone="critical">Sospendi</s-button>
         </Form>}
       </s-box>)}
       <Form method="post"><input type="hidden" name="intent" value="saveSupplier" />
@@ -215,7 +215,7 @@ export default function SupplyChain() {
           <label style={field}>Registrazione EPR<input name="eprRegistrationNumber" style={input} /></label>
           <label style={field}>Rif. dichiarazione REACH<input name="reachDeclarationRef" style={input} /></label>
           <label style={field}>Registrazione MOCA<input name="foodContactRegistration" style={input} /></label>
-        </div><p><button type="submit">Salva fornitore</button></p>
+        </div><p><s-button type="submit" variant="primary">Salva fornitore</s-button></p>
       </Form>
     </s-section>
 
@@ -224,9 +224,9 @@ export default function SupplyChain() {
         <s-heading>{laboratory.laboratoryCode} · {laboratory.legalName}</s-heading>
         <s-paragraph>{laboratory.status} · {laboratory.accreditationBody} {laboratory.accreditationNumber} · {laboratory._count.tests} prove</s-paragraph>
         {laboratory.status !== "APPROVED" ? <Form method="post"><input type="hidden" name="intent" value="approveLaboratory" /><input type="hidden" name="laboratoryId" value={laboratory.id} />
-          <label><input type="checkbox" name="approvalAck" value="yes" required /> Ho verificato accreditamento e campo di prova.</label> <button type="submit">Approva</button>
+          <label><input type="checkbox" name="approvalAck" value="yes" required /> Ho verificato accreditamento e campo di prova.</label> <s-button type="submit">Approva</s-button>
         </Form> : <Form method="post"><input type="hidden" name="intent" value="suspendLaboratory" /><input type="hidden" name="laboratoryId" value={laboratory.id} />
-          <label><input type="checkbox" name="approvalAck" value="yes" required /> Confermo la sospensione.</label> <button type="submit">Sospendi</button>
+          <label><input type="checkbox" name="approvalAck" value="yes" required /> Confermo la sospensione.</label> <s-button type="submit" tone="critical">Sospendi</s-button>
         </Form>}
       </s-box>)}
       <Form method="post"><input type="hidden" name="intent" value="saveLaboratory" />
@@ -240,7 +240,7 @@ export default function SupplyChain() {
           <label style={field}>Sito HTTPS<input type="url" name="website" style={input} /></label>
         </div>
         <label style={field}>Campo di accreditamento<textarea name="accreditationScope" minLength={10} rows={3} required style={input} /></label>
-        <p><button type="submit">Salva laboratorio</button></p>
+        <p><s-button type="submit" variant="primary">Salva laboratorio</s-button></p>
       </Form>
     </s-section>
   </s-page>;

@@ -523,7 +523,7 @@ export default function PpwrCompliance() {
           <label style={field}>Telefono<input name="contactPhone" defaultValue={operator?.contactPhone || ""} style={input} /></label>
           <label style={field}>Rappresentante autorizzato<input name="authorisedRepresentative" defaultValue={operator?.authorisedRepresentative || ""} style={input} /></label>
           <label style={field}>Registrazione EPR<input name="eprRegistrationNumber" defaultValue={operator?.eprRegistrationNumber || ""} style={input} /></label>
-        </div><p><button type="submit">Salva operatore</button></p>
+        </div><p><s-button type="submit" variant="primary">Salva operatore</s-button></p>
       </Form>
     </s-section>
 
@@ -542,7 +542,7 @@ export default function PpwrCompliance() {
           <label style={field}>Rotazioni previste<input type="number" name="reuseCycles" min="1" style={input} /></label>
           <label><input type="checkbox" name="foodContact" /> Contatto alimentare</label>
         </div><label style={field}>Uso previsto<textarea name="intendedUse" minLength={10} required rows={3} style={input} /></label>
-        <p><button type="submit">Crea fascicolo</button></p>
+        <p><s-button type="submit" variant="primary">Crea fascicolo</s-button></p>
       </Form>
     </s-section>
 
@@ -555,7 +555,7 @@ export default function PpwrCompliance() {
 
     {selected && evaluation && <>
       <s-section heading={`3. Valutazione ${selected.uniqueIdentifier} v${selected.version}`}>
-        {["DECLARED", "WITHDRAWN"].includes(selected.status) && <Form method="post"><input type="hidden" name="intent" value="createVersion" /><input type="hidden" name="profileId" value={selected.id} /><s-banner tone={selected.status === "WITHDRAWN" ? "critical" : "info"}>Fascicolo e firma sono immutabili. Per cambiare dati crea una nuova versione.</s-banner><p><button type="submit">Crea nuova versione</button></p></Form>}
+        {["DECLARED", "WITHDRAWN"].includes(selected.status) && <Form method="post"><input type="hidden" name="intent" value="createVersion" /><input type="hidden" name="profileId" value={selected.id} /><s-banner tone={selected.status === "WITHDRAWN" ? "critical" : "info"}>Fascicolo e firma sono immutabili. Per cambiare dati crea una nuova versione.</s-banner><p><s-button type="submit">Crea nuova versione</s-button></p></Form>}
         <s-grid gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap="base">
           <s-box padding="base" background="subdued" borderRadius="base"><s-text>Completezza</s-text><s-heading>{evaluation.completenessPercent}%</s-heading></s-box>
           <s-box padding="base" background="subdued" borderRadius="base"><s-text>Spazio vuoto</s-text><s-heading>{evaluation.calculatedEmptySpaceRatio}%</s-heading></s-box>
@@ -579,7 +579,7 @@ export default function PpwrCompliance() {
             <label style={field}>Tipologia<select name="packagingType" style={input}>{PACKAGING_TYPES.map((value) => <option key={value}>{value}</option>)}</select></label>
             <label style={field}>Fornitore approvato<select name="supplierId" required style={input}><option value="">Seleziona</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.supplierCode} · {supplier.legalName}</option>)}</select></label>
             <label><input type="checkbox" name="separable" defaultChecked /> Separabile</label>
-          </div><label style={field}>Sostanze note<textarea name="substancesOfConcern" rows={2} style={input} /></label><p><button type="submit">Aggiungi componente</button></p>
+          </div><label style={field}>Sostanze note<textarea name="substancesOfConcern" rows={2} style={input} /></label><p><s-button type="submit">Aggiungi componente</s-button></p>
         </Form> : <s-banner tone="warning">Approva almeno un fornitore nella sezione Fornitori e prove.</s-banner>)}
       </s-section>
 
@@ -598,7 +598,7 @@ export default function PpwrCompliance() {
             <label style={field}>SHA-256<input name="sha256" minLength={64} maxLength={64} required style={input} /></label>
           </div><label style={field}>Note<textarea name="notes" rows={2} style={input} /></label>
           <label><input type="checkbox" name="verificationAck" value="yes" required /> Ho verificato documento, emittente, validità e corrispondenza del file all&apos;hash.</label>
-          <p><button type="submit">Registra e verifica dichiarazione</button></p>
+          <p><s-button type="submit">Registra e verifica dichiarazione</s-button></p>
         </Form>}
       </s-section>
 
@@ -624,7 +624,7 @@ export default function PpwrCompliance() {
           <label style={field}>Sintesi risultati<textarea name="resultSummary" minLength={10} rows={3} required style={input} /></label>
           <label style={field}>Valori misurati JSON (opzionale)<textarea name="measuredValues" rows={3} style={input} placeholder={'{"piombo_mg_kg": 12, "limite_mg_kg": 100}'}/></label>
           <label><input type="checkbox" name="verificationAck" value="yes" required /> Ho verificato accreditamento, campo di prova, campione, metodo, esito e hash.</label>
-          <p><button type="submit">Registra e verifica prova</button></p>
+          <p><s-button type="submit">Registra e verifica prova</s-button></p>
         </Form> : <s-banner tone="warning">Approva almeno un laboratorio nella sezione Fornitori e prove.</s-banner>)}
       </s-section>
 
@@ -646,7 +646,7 @@ export default function PpwrCompliance() {
               <label style={field}>URL fonte HTTPS<input type="url" name="sourceUrl" defaultValue={component.conaiClassification?.sourceUrl || ""} style={input} /></label>
             </div><label style={field}>Note<textarea name="notes" defaultValue={component.conaiClassification?.notes || ""} rows={2} style={input} /></label>
             <label><input type="checkbox" name="verificationAck" value="yes" required /> Ho verificato classificazione, periodo di validità e fonte CONAI applicabile.</label>
-            <p><button type="submit">Salva e verifica classificazione</button></p>
+            <p><s-button type="submit">Salva e verifica classificazione</s-button></p>
           </Form>}
         </s-box>)}
       </s-section>
@@ -660,7 +660,7 @@ export default function PpwrCompliance() {
             <label style={field}>Emittente<input name="issuer" style={input} /></label><label style={field}>Data emissione<input type="date" name="issuedAt" style={input} /></label>
             <label style={field}>Scadenza<input type="date" name="expiresAt" style={input} /></label><label style={field}>URL HTTPS<input type="url" name="sourceUrl" style={input} /></label>
             <label style={field}>SHA-256<input name="sha256" minLength={64} maxLength={64} style={input} /></label>
-          </div><label style={field}>Note<textarea name="notes" rows={2} style={input} /></label><p><button type="submit">Registra evidenza</button></p>
+          </div><label style={field}>Note<textarea name="notes" rows={2} style={input} /></label><p><s-button type="submit">Registra evidenza</s-button></p>
         </Form>}
       </s-section>
 
@@ -678,7 +678,7 @@ export default function PpwrCompliance() {
           <label style={field}>Specifiche comuni<textarea name="commonSpecifications" defaultValue={selected.commonSpecifications || ""} rows={2} style={input} /></label>
           <label style={field}>Altre specifiche tecniche<textarea name="otherTechnicalSpecifications" defaultValue={selected.otherTechnicalSpecifications || ""} rows={2} style={input} /></label>
           <label style={field}>Altra normativa applicabile<textarea name="applicableLegislation" defaultValue={selected.applicableLegislation || ""} rows={2} style={input} /></label>
-          <p><button type="submit">Esegui valutazione completa</button></p>
+          <p><s-button type="submit" variant="primary">Esegui valutazione completa</s-button></p>
         </Form>}
       </s-section>
 
@@ -688,7 +688,7 @@ export default function PpwrCompliance() {
           {!selected.declarationSignature.revokedAt && <Form method="post"><input type="hidden" name="intent" value="revokeSignature" /><input type="hidden" name="profileId" value={selected.id} />
             <label style={field}>Motivazione revoca<textarea name="revocationReason" minLength={10} rows={2} required style={input} /></label>
             <label><input type="checkbox" name="revocationAck" value="yes" required /> Confermo il ritiro della dichiarazione firmata.</label>
-            <p><button type="submit">Revoca dichiarazione</button></p>
+            <p><s-button type="submit" tone="critical">Revoca dichiarazione</s-button></p>
           </Form>}
         </> : editable && <>
           {!manufacturer && <s-banner tone="warning">Registra il responsabile del fabbricante nella sezione Fornitori e prove.</s-banner>}
@@ -701,7 +701,7 @@ export default function PpwrCompliance() {
             </div>
             <label><input type="checkbox" name="acceptResponsibility" value="yes" required /> {DECLARATION_ATTESTATION_TEXT}</label><br />
             <label><input type="checkbox" name="acceptElectronicSignature" value="yes" required /> Accetto che nome, data, utente Shopify, snapshot e SHA-256 costituiscano l&apos;attestazione elettronica registrata da EcoTraceIT; non è una firma elettronica qualificata eIDAS.</label>
-            <p><button type="submit" disabled={!evaluation.canDeclare}>Firma e registra dichiarazione</button></p>
+            <p><s-button type="submit" variant="primary" disabled={!evaluation.canDeclare}>Firma e registra dichiarazione</s-button></p>
           </Form>}
         </>}
       </s-section>
