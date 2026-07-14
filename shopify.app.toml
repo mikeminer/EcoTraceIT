@@ -44,3 +44,21 @@ name = "EcoTraceIT shipping weight"
 description = "Last known product shipping weight used for a fast checkout estimate."
 type = "number_integer"
 access.admin = "merchant_read"
+
+[product.metafields.ecotraceit.length_mm]
+name = "EcoTraceIT product length"
+description = "Packed product length in millimetres for PPWR right-sizing."
+type = "number_decimal"
+access.admin = "merchant_read_write"
+
+[product.metafields.ecotraceit.width_mm]
+name = "EcoTraceIT product width"
+description = "Packed product width in millimetres for PPWR right-sizing."
+type = "number_decimal"
+access.admin = "merchant_read_write"
+
+[product.metafields.ecotraceit.height_mm]
+name = "EcoTraceIT product height"
+description = "Packed product height in millimetres for PPWR right-sizing."
+type = "number_decimal"
+access.admin = "merchant_read_write"

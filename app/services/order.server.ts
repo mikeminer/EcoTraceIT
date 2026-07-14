@@ -4,6 +4,7 @@ import {suggestPackaging} from "./packaging.server";
 import {reserveOffset} from "./offset.server";
 import {reportOrderProcessed} from "./app-events.server";
 import {PLANS, type PlanHandle} from "./pricing.server";
+import {selectRightSizedPackaging, type ProductDimensions} from "./right-sizing.server";
 
 type ShopifyOrder = {
   admin_graphql_api_id?: string;
@@ -60,6 +61,11 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
     weightGrams,
     itemCount: payload.line_items?.reduce((sum, line) => sum + (line.quantity || 1), 0) || 1,
   });
+  let packagingProfile = await prisma.packagingProfile.findFirst({
+    where: {shop, uniqueIdentifier: packaging.code, status: "DECLARED"},
+    orderBy: {version: "desc"},
+    select: {id: true, declarationNumber: true, version: true, uniqueIdentifier: true},
+  });
   const baseline = carbon.emissionsKg + packaging.estimatedSavingsKg;
   const record = await prisma.sustainabilityOrder.upsert({
     where: {shop_orderGid: {shop, orderGid}},
@@ -70,11 +76,13 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
       weightGrams, carrier, distanceKm: carbon.distanceKm,
       emissionsKg: carbon.emissionsKg, baselineEmissionsKg: baseline,
       savingsKg: packaging.estimatedSavingsKg, packagingCode: packaging.code,
+      packagingProfileId: packagingProfile?.id,
     },
     update: {
       weightGrams, carrier, distanceKm: carbon.distanceKm,
       emissionsKg: carbon.emissionsKg, baselineEmissionsKg: baseline,
       savingsKg: packaging.estimatedSavingsKg, packagingCode: packaging.code,
+      packagingProfileId: packagingProfile?.id,
     },
   });
   const offsetSelected = payload.note_attributes?.some((attribute) =>
@@ -95,22 +103,48 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
   const lines = payload.line_items || [];
   const totalQuantity = Math.max(1, lines.reduce((sum, line) => sum + (line.quantity || 1), 0));
   const productCategories = new Map<string, string>();
+  const productDimensions = new Map<string, Omit<ProductDimensions, "quantity">>();
   if (graphql) {
     const productIds = [...new Set(lines.flatMap((line) => line.product_id ? ["gid://shopify/Product/" + line.product_id] : []))];
     if (productIds.length) {
       const categoryResponse = await graphql(
-        "query EcoTraceITProductCategories($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id productType category { fullName } } } }",
+        `query EcoTraceITProductCategories($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id productType category { fullName } metafields(identifiers: [{namespace: "$app:ecotraceit", key: "length_mm"}, {namespace: "$app:ecotraceit", key: "width_mm"}, {namespace: "$app:ecotraceit", key: "height_mm"}]) { key value } } } }`,
         {variables: {ids: productIds}},
       );
       const categoryJson = await categoryResponse.json() as {
-        data?: {nodes?: Array<{id?: string; productType?: string; category?: {fullName?: string}} | null>};
+        data?: {nodes?: Array<{id?: string; productType?: string; category?: {fullName?: string}; metafields?: Array<{key: string; value: string} | null>} | null>};
         errors?: Array<{message: string}>;
       };
       if (categoryJson.errors?.length) {
         console.warn(JSON.stringify({event: "product_category_lookup_failed", shop, errors: categoryJson.errors}));
       }
       for (const product of categoryJson.data?.nodes || []) {
-        if (product?.id) productCategories.set(product.id, product.category?.fullName || product.productType || "Non categorizzato");
+if (product?.id) {
+          productCategories.set(product.id, product.category?.fullName || product.productType || "Non categorizzato");
+          const values = new Map((product.metafields || []).flatMap((item) => item ? [[item.key, Number(item.value)] as const] : []));
+          const lengthMm = values.get("length_mm") || 0;
+          const widthMm = values.get("width_mm") || 0;
+          const heightMm = values.get("height_mm") || 0;
+          if (lengthMm > 0 && widthMm > 0 && heightMm > 0) productDimensions.set(product.id, {lengthMm, widthMm, heightMm});
+        }
+      }
+    }
+  }
+  if (productDimensions.size) {
+    const dimensionalItems = lines.flatMap((line) => {
+      const dimensions = line.product_id ? productDimensions.get("gid://shopify/Product/" + line.product_id) : undefined;
+      return dimensions ? [{...dimensions, quantity: line.quantity || 1}] : [];
+    });
+    if (dimensionalItems.length === lines.filter((line) => line.product_id).length) {
+      const candidates = await prisma.packagingProfile.findMany({
+        where: {shop, status: "DECLARED"},
+        select: {id: true, declarationNumber: true, version: true, uniqueIdentifier: true, lengthMm: true, widthMm: true, heightMm: true, productVolumeCm3: true, packagingWeightGrams: true, isReusable: true},
+      });
+      const rightSized = selectRightSizedPackaging(dimensionalItems, candidates);
+      if (rightSized.selected) {
+        packagingProfile = rightSized.selected;
+        await prisma.sustainabilityOrder.update({where: {id: record.id}, data: {packagingProfileId: rightSized.selected.id, packagingCode: rightSized.selected.uniqueIdentifier}});
+        console.info(JSON.stringify({event: "right_sizing_selected", shop, orderGid, profile: rightSized.selected.uniqueIdentifier, emptySpaceRatio: rightSized.emptySpaceRatio}));
       }
     }
   }
@@ -159,6 +193,10 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
         {ownerId: orderGid, namespace: "ecotraceit", key: "packaging_material", type: "single_line_text_field", value: packaging.material},
         {ownerId: orderGid, namespace: "ecotraceit", key: "carbon_neutral", type: "boolean", value: String(offsetSelected)},
         {ownerId: orderGid, namespace: "ecotraceit", key: "calculation_method", type: "single_line_text_field", value: carbon.method},
+        ...(packagingProfile ? [
+          {ownerId: orderGid, namespace: "ecotraceit", key: "ppwr_profile", type: "single_line_text_field", value: `${packagingProfile.uniqueIdentifier}:v${packagingProfile.version}`},
+          {ownerId: orderGid, namespace: "ecotraceit", key: "ppwr_declaration", type: "single_line_text_field", value: packagingProfile.declarationNumber || ""},
+        ] : []),
         ...productMetafields,
       ];
     // metafieldsSet accepts at most 25 entries. Batch large orders and fail the

@@ -19,6 +19,10 @@ Il progetto usa Shopify React Router (successore ufficiale del template Remix), 
 - Shopify App Pricing: Free, Pro e Enterprise usage-based tramite App Events API.
 - Localizzazione italiana e inglese.
 - Minimizzazione GDPR e webhook privacy obbligatori.
+- Workspace PPWR con fascicolo Allegato VII, controlli bloccanti, versionamento immutabile e dichiarazione Allegato VIII.
+- Registro packaging riutilizzabile, reverse logistics e cicli serializzati.
+- Export EPR/CONAI per materiale, peso, contenuto riciclato, fascia e tipologia.
+- Right-sizing da dimensioni prodotto e tracking DHL MyDHL/FedEx REST.
 
 ## Struttura
 
@@ -34,12 +38,12 @@ prisma/
   migrations/              schema sessioni, ordini e statistiche
   schema.prisma
 shopify.app.toml           scope, webhook e definizioni metafield
-Dockerfile                 runtime Node 22 per produzione
+Dockerfile                 runtime Node 24 per produzione
 ```
 
 ## Avvio locale
 
-Requisiti: Node `22.12+`, npm, Shopify CLI 4.4+ e un development store.
+Requisiti: Node `24.x`, npm, Shopify CLI 4.4+ e un development store.
 
 ```powershell
 Copy-Item .env.example .env
@@ -66,6 +70,8 @@ Il progetto è collegato all’app Dev Dashboard **EcoTraceIT**. `shopify app de
 | `SHOPIFY_ORGANIZATION_ID` | ID organizzazione Dev Dashboard. |
 | `SHOPIFY_APP_ID` | ID app Partner; il codice accetta numero o GID. |
 | `APP_EVENTS_ORDER_HANDLE` | Meter Enterprise, default `order_processed`. |
+| DHL_API_KEY, DHL_API_SECRET | Credenziali MyDHL API per tracking operativo. |
+| FEDEX_CLIENT_ID, FEDEX_CLIENT_SECRET | OAuth FedEx REST per tracking operativo. |
 
 Non esporre chiavi nelle estensioni, nei TOML o nei metafield.
 
@@ -145,6 +151,10 @@ Il merchant abilita il blocco dall’editor Checkout e sceglie una variante prod
 
 EcoTraceIT conserva shop, ID tecnici, nome tecnico ordine, paese, prime due cifre del CAP, peso e dati ambientali. Non memorizza nome cliente, email, telefono o indirizzo completo. `shop/redact` ed uninstall eliminano sessioni, impostazioni, ordini aggregati e ricevute webhook dello shop.
 
+Il workspace **PPWR** gestisce operatore economico, profili di imballaggio versionati, componenti e bilancio di massa, spazio vuoto, evidenze, controlli degli articoli 5–12, fascicolo tecnico dell'Allegato VII, dichiarazione UE dell'Allegato VIII, conservazione e audit trail. La firma è bloccata finché restano controlli falliti; modifiche successive invalidano la dichiarazione.
+
+Guida completa: [`docs/PPWR-COMPLIANCE.md`](docs/PPWR-COMPLIANCE.md).
+
 Prima della submission pubblicare privacy policy, termini, DPA, retention policy, subprocessors e contatto supporto. Richiedere solo i livelli di protected customer data realmente necessari.
 
 Le etichette e i suggerimenti PPWR sono supporto operativo, non consulenza legale. Validare materiali, codici e obblighi applicabili con un consulente; evitare claim assoluti come “zero impatto”.
@@ -192,4 +202,4 @@ Palette: verde bosco `#174C2B`, salvia `#E6F4EA`, terra `#9A6B45`, fondo `#F7F6F
 - Build React Router client/SSR.
 - Prisma schema validation.
 - Build Checkout, Admin e Theme App Extension.
-- CI GitHub su Node 22 e Node 24.
+- CI GitHub su Node 24.

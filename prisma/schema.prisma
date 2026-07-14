@@ -8,78 +8,270 @@ datasource db {
 }
 
 model Session {
-  id String @id
-  shop String
-  state String
-  isOnline Boolean @default(false)
-  scope String?
-  expires DateTime?
-  accessToken String
-  userId BigInt?
-  firstName String?
-  lastName String?
-  email String?
-  accountOwner Boolean @default(false)
-  locale String?
-  collaborator Boolean? @default(false)
-  emailVerified Boolean? @default(false)
-  refreshToken String?
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
   refreshTokenExpires DateTime?
 }
 
 model ShopSettings {
-  shop String @id
-  locale String @default("it")
-  plan String @default("free")
-  carbonPricePerKg Float @default(0.30)
-  carbonNeutralEnabled Boolean @default(false)
-  checkoutBadgeEnabled Boolean @default(true)
-  defaultCarrier String @default("standard")
-  monthlyOrderLimit Int @default(100)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders SustainabilityOrder[]
+  shop                 String                  @id
+  locale               String                  @default("it")
+  plan                 String                  @default("free")
+  carbonPricePerKg     Float                   @default(0.30)
+  carbonNeutralEnabled Boolean                 @default(false)
+  checkoutBadgeEnabled Boolean                 @default(true)
+  defaultCarrier       String                  @default("standard")
+  monthlyOrderLimit    Int                     @default(100)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  orders               SustainabilityOrder[]
+  complianceOperator   ComplianceOperator?
+  packagingProfiles    PackagingProfile[]
+  reusableUnits        ReusablePackagingUnit[]
+  complianceAuditLogs  ComplianceAuditLog[]
 }
 
 model SustainabilityOrder {
-  id String @id @default(cuid())
-  shop String
-  settings ShopSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
-  orderGid String
-  orderName String?
-  countryCode String?
-  postalCodePrefix String?
-  weightGrams Int
-  distanceKm Float
-  emissionsKg Float
+  id                  String            @id @default(cuid())
+  shop                String
+  settings            ShopSettings      @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  orderGid            String
+  orderName           String?
+  countryCode         String?
+  postalCodePrefix    String?
+  weightGrams         Int
+  distanceKm          Float
+  emissionsKg         Float
   baselineEmissionsKg Float
-  savingsKg Float @default(0)
-  carrier String
-  packagingCode String
-  offsetSelected Boolean @default(false)
-  offsetAmount Float @default(0)
-  calculatedAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  productStats ProductStat[]
+  savingsKg           Float             @default(0)
+  carrier             String
+  packagingCode       String
+  packagingProfileId  String?
+  packagingProfile    PackagingProfile? @relation(fields: [packagingProfileId], references: [id], onDelete: SetNull)
+  offsetSelected      Boolean           @default(false)
+  offsetAmount        Float             @default(0)
+  calculatedAt        DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  productStats        ProductStat[]
+
   @@unique([shop, orderGid])
   @@index([shop, calculatedAt])
+  @@index([packagingProfileId])
+}
+
+model ComplianceOperator {
+  shop                     String       @id
+  settings                 ShopSettings @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  economicRole             String       @default("DISTRIBUTOR")
+  legalName                String
+  tradeName                String?
+  vatNumber                String?
+  streetAddress            String
+  postalCode               String
+  city                     String
+  countryCode              String       @default("IT")
+  contactEmail             String
+  contactPhone             String?
+  authorisedRepresentative String?
+  eprRegistrationNumber    String?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+}
+
+model PackagingProfile {
+  id                           String                  @id @default(cuid())
+  shop                         String
+  settings                     ShopSettings            @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  uniqueIdentifier             String
+  version                      Int                     @default(1)
+  name                         String
+  intendedUse                  String
+  packagingLevel               String                  @default("ECOMMERCE")
+  status                       String                  @default("DRAFT")
+  isReusable                   Boolean                 @default(false)
+  reuseCycles                  Int?
+  foodContact                  Boolean                 @default(false)
+  packagingWeightGrams         Float
+  lengthMm                     Float
+  widthMm                      Float
+  heightMm                     Float
+  productVolumeCm3             Float
+  emptySpaceRatio              Float
+  substancesStatus             String                  @default("PENDING")
+  recyclabilityStatus          String                  @default("PENDING")
+  recyclabilityGrade           String?
+  recycledContentStatus        String                  @default("PENDING")
+  compostabilityStatus         String                  @default("NOT_APPLICABLE")
+  labelStatus                  String                  @default("PENDING")
+  minimisationAssessment       String
+  riskAssessment               String
+  manufacturingControls        String
+  harmonisedStandards          String?
+  commonSpecifications         String?
+  otherTechnicalSpecifications String?
+  applicableLegislation        String?
+  declarationNumber            String?
+  declarationPlace             String?
+  signatoryName                String?
+  signatoryRole                String?
+  declaredAt                   DateTime?
+  retentionUntil               DateTime?
+  createdAt                    DateTime                @default(now())
+  updatedAt                    DateTime                @updatedAt
+  components                   PackagingComponent[]
+  evidence                     ComplianceEvidence[]
+  checks                       ComplianceCheck[]
+  auditLogs                    ComplianceAuditLog[]
+  orders                       SustainabilityOrder[]
+  reusableUnits                ReusablePackagingUnit[]
+
+  @@unique([shop, uniqueIdentifier, version])
+  @@index([shop, status])
+}
+
+model PackagingComponent {
+  id                     String           @id @default(cuid())
+  profileId              String
+  profile                PackagingProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  materialCode           String
+  materialName           String
+  function               String
+  weightGrams            Float
+  recycledContentPercent Float            @default(0)
+  postConsumerPercent    Float            @default(0)
+  recyclingStream        String
+  separable              Boolean          @default(true)
+  supplierName           String?
+  supplierDeclarationRef String?
+  substancesOfConcern    String?
+  conaiMaterial          String?
+  conaiContributionBand  String?
+  packagingType          String?          @default("SECONDARY_TERTIARY")
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  @@index([profileId])
+}
+
+model ComplianceEvidence {
+  id           String           @id @default(cuid())
+  profileId    String
+  profile      PackagingProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  evidenceType String
+  title        String
+  reference    String
+  issuer       String?
+  issuedAt     DateTime?
+  expiresAt    DateTime?
+  sourceUrl    String?
+  sha256       String?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([profileId, evidenceType])
+}
+
+model ComplianceCheck {
+  id        String           @id @default(cuid())
+  profileId String
+  profile   PackagingProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  code      String
+  article   String
+  status    String
+  message   String
+  checkedAt DateTime         @default(now())
+
+  @@unique([profileId, code])
+  @@index([profileId, status])
+}
+
+model ComplianceAuditLog {
+  id        String            @id @default(cuid())
+  shop      String
+  settings  ShopSettings      @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  profileId String?
+  profile   PackagingProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  actor     String
+  action    String
+  details   Json
+  createdAt DateTime          @default(now())
+
+  @@index([shop, createdAt])
+  @@index([profileId, createdAt])
+}
+
+model ReusablePackagingUnit {
+  id                 String           @id @default(cuid())
+  shop               String
+  settings           ShopSettings     @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  profileId          String
+  profile            PackagingProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  serialNumber       String
+  status             String           @default("AVAILABLE")
+  cycleCount         Int              @default(0)
+  maxCycles          Int
+  lastOrderGid       String?
+  lastCarrier        String?
+  lastTrackingNumber String?
+  lastShippedAt      DateTime?
+  lastReturnedAt     DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  events             ReuseEvent[]
+
+  @@unique([shop, serialNumber])
+  @@index([shop, status])
+  @@index([profileId])
+}
+
+model ReuseEvent {
+  id             String                @id @default(cuid())
+  unitId         String
+  unit           ReusablePackagingUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  eventType      String
+  orderGid       String?
+  carrier        String?
+  trackingNumber String?
+  condition      String?
+  notes          String?
+  metadata       Json?
+  occurredAt     DateTime              @default(now())
+
+  @@index([unitId, occurredAt])
+  @@index([trackingNumber])
 }
 
 model ProductStat {
-  id String @id @default(cuid())
-  orderId String
-  order SustainabilityOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productGid String?
-  title String
-  category String?
-  quantity Int
+  id                   String              @id @default(cuid())
+  orderId              String
+  order                SustainabilityOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productGid           String?
+  title                String
+  category             String?
+  quantity             Int
   allocatedEmissionsKg Float
+
   @@index([productGid])
 }
 
 model WebhookReceipt {
-  id String @id
-  topic String
-  shop String
+  id         String   @id
+  topic      String
+  shop       String
   receivedAt DateTime @default(now())
 }
