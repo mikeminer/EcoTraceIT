@@ -20,6 +20,9 @@ Il progetto usa Shopify React Router (successore ufficiale del template Remix), 
 - Localizzazione italiana e inglese.
 - Minimizzazione GDPR e webhook privacy obbligatori.
 - Workspace PPWR con fascicolo Allegato VII, controlli bloccanti, versionamento immutabile e dichiarazione Allegato VIII.
+- Registro fornitori, dichiarazioni di filiera, laboratori accreditati e rapporti di prova strutturati.
+- Classificazioni CONAI versionate per componente, con fonte, validità, stato e aliquota opzionale.
+- Responsabile del fabbricante con attestazione elettronica, snapshot SHA-256, revoca e audit trail.
 - Registro packaging riutilizzabile, reverse logistics e cicli serializzati.
 - Export EPR/CONAI per materiale, peso, contenuto riciclato, fascia e tipologia.
 - Right-sizing da dimensioni prodotto e tracking DHL MyDHL/FedEx REST.
@@ -53,6 +56,21 @@ npm run dev
 ```
 
 Il progetto è collegato all’app Dev Dashboard **EcoTraceIT**. `shopify app dev` crea il tunnel HTTPS, aggiorna temporaneamente gli URL e consente l’anteprima delle estensioni.
+
+## GitNexus
+
+Il repository include un server MCP GitNexus portabile basato su Docker, configurato in `.mcp.json`. Docker Desktop deve essere attivo; al primo utilizzo l'immagine viene costruita automaticamente.
+
+```powershell
+npm run gitnexus:analyze
+npm run gitnexus:status
+node scripts/gitnexus-docker.mjs context evaluatePpwr
+node scripts/gitnexus-docker.mjs impact evaluatePpwr --direction upstream
+node scripts/gitnexus-docker.mjs detect-changes
+npm run gitnexus:wiki
+```
+
+`npm run gitnexus:clean` elimina soltanto l'indice generato, non il codice. Dopo modifiche importanti rieseguire `npm run gitnexus:analyze`; prima di ogni commit usare `detect-changes`.
 
 ## Variabili e chiavi API
 
@@ -153,7 +171,7 @@ EcoTraceIT conserva shop, ID tecnici, nome tecnico ordine, paese, prime due cifr
 
 Il workspace **PPWR** gestisce operatore economico, profili di imballaggio versionati, componenti e bilancio di massa, spazio vuoto, evidenze, controlli degli articoli 5–12, fascicolo tecnico dell'Allegato VII, dichiarazione UE dell'Allegato VIII, conservazione e audit trail. La firma è bloccata finché restano controlli falliti; modifiche successive invalidano la dichiarazione.
 
-Guida completa: [`docs/PPWR-COMPLIANCE.md`](docs/PPWR-COMPLIANCE.md).
+Guide complete: [`docs/PPWR-COMPLIANCE.md`](docs/PPWR-COMPLIANCE.md), [`docs/SUPPLY-CHAIN-EVIDENCE.md`](docs/SUPPLY-CHAIN-EVIDENCE.md) e [`docs/BUILT-FOR-SHOPIFY.md`](docs/BUILT-FOR-SHOPIFY.md).
 
 Prima della submission pubblicare privacy policy, termini, DPA, retention policy, subprocessors e contatto supporto. Richiedere solo i livelli di protected customer data realmente necessari.
 

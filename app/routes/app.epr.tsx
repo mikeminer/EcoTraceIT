@@ -10,7 +10,7 @@ export async function loader({request}: LoaderFunctionArgs) {
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const orders = await prisma.sustainabilityOrder.findMany({where: {shop: session.shop, calculatedAt: {gte: from, lte: now}}, select: {packagingProfileId: true, calculatedAt: true}});
   const ids = [...new Set(orders.flatMap((o) => o.packagingProfileId ? [o.packagingProfileId] : []))];
-  const profiles = await prisma.packagingProfile.findMany({where: {shop: session.shop, id: {in: ids}}, include: {components: true}});
+  const profiles = await prisma.packagingProfile.findMany({where: {shop: session.shop, id: {in: ids}}, include: {components: {include: {conaiClassification: true}}}});
   return {report: aggregateEpr(orders, profiles), from: from.toISOString().slice(0, 10), to: now.toISOString().slice(0, 10)};
 }
 
@@ -22,7 +22,7 @@ export default function EprPage() {
       <form action="/api/epr" method="get"><label>Dal <input type="date" name="from" defaultValue={from} /></label> <label>Al <input type="date" name="to" defaultValue={to} /></label> <button type="submit">Scarica CSV</button></form>
     </s-section>
     <s-section heading="Mese corrente">
-      {report.rows.map((row) => <s-box key={row.materialCode + row.contributionBand} padding="base" borderWidth="base"><s-heading>{row.materialCode} · {row.materialName}</s-heading><s-text>{row.grossKg.toFixed(3)} kg · riciclato {row.recycledKg.toFixed(3)} kg · CONAI {row.conaiMaterial}/{row.contributionBand} · {row.units} unità</s-text></s-box>)}
+      {report.rows.map((row) => <s-box key={row.materialCode + row.contributionBand + row.sourceReference} padding="base" borderWidth="base"><s-heading>{row.materialCode} · {row.materialName}</s-heading><s-text>{row.grossKg.toFixed(3)} kg · riciclato {row.recycledKg.toFixed(3)} kg · CONAI {row.conaiMaterial}/{row.contributionBand} · {row.classificationStatus} · fonte {row.sourceReference} · {row.units} unità</s-text></s-box>)}
     </s-section>
   </s-page>;
 }

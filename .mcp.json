@@ -1,5 +1,13 @@
 {
   "mcpServers": {
+    "gitnexus": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "scripts/gitnexus-docker.mjs",
+        "mcp"
+      ]
+    },
     "shopify-dev-mcp": {
       "type": "stdio",
       "command": "npx",

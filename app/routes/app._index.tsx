@@ -1,5 +1,7 @@
 import type {HeadersFunction, LoaderFunctionArgs} from "react-router";
 import {useLoaderData} from "react-router";
+import {useEffect, useState} from "react";
+import {useAppBridge} from "@shopify/app-bridge-react";
 import {boundary} from "@shopify/shopify-app-react-router/server";
 import {authenticate} from "../shopify.server";
 import prisma from "../db.server";
@@ -13,12 +15,44 @@ export const loader = async ({request}: LoaderFunctionArgs) => {
 };
 
 const kg = (value: number) => value.toLocaleString("it-IT", {maximumFractionDigits: 2});
+type ThemeBadgeStatus = "loading" | "active" | "available" | "unavailable" | "unknown";
+
+function activationStatus(value: unknown): ThemeBadgeStatus {
+  if (!value || typeof value !== "object" || !("status" in value)) return "unknown";
+  const status = (value as {status?: unknown}).status;
+  return status === "active" || status === "available" || status === "unavailable" ? status : "unknown";
+}
 
 export default function Dashboard() {
+  const shopify = useAppBridge();
   const {dashboard, settings} = useLoaderData<typeof loader>();
+  const [themeBadgeStatus, setThemeBadgeStatus] = useState<ThemeBadgeStatus>("loading");
   const t = getCopy(settings.locale);
   const currentMonth = new Date().toISOString().slice(0, 7);
   const monthlyUsage = dashboard.monthly.find((row) => row.month === currentMonth)?.orders || 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    shopify.app.extensions()
+      .then((extensions) => {
+        if (cancelled) return;
+        const themeExtension = extensions.find((extension) => extension.type === "theme_app_extension");
+        const activations = themeExtension?.activations || [];
+        const badge = activations.find((activation) => {
+          if (!activation || typeof activation !== "object" || !("handle" in activation)) return false;
+          return (activation as {handle?: unknown}).handle === "ecotraceit-badge";
+        });
+        const statuses = activations.map(activationStatus);
+        setThemeBadgeStatus(activationStatus(badge) !== "unknown"
+          ? activationStatus(badge)
+          : statuses.includes("active") ? "active" : statuses[0] || "unknown");
+      })
+      .catch(() => {
+        if (!cancelled) setThemeBadgeStatus("unknown");
+      });
+    return () => { cancelled = true; };
+  }, [shopify]);
+
   return (
     <s-page heading="EcoTraceIT">
       <s-button slot="primary-action" href="/app/settings">{t.configure}</s-button>
@@ -80,6 +114,18 @@ export default function Dashboard() {
       </s-section>
       <s-section slot="aside" heading="PPWR">
         <s-paragraph>{t.ppwrNotice}</s-paragraph>
+      </s-section>
+      <s-section slot="aside" heading="Badge vetrina">
+        {themeBadgeStatus === "loading" ? (
+          <s-paragraph>Verifica attivazione…</s-paragraph>
+        ) : themeBadgeStatus === "active" ? (
+          <s-banner tone="success">Theme App Extension attiva nel tema pubblicato.</s-banner>
+        ) : (
+          <>
+            <s-banner tone="warning">Il badge non risulta attivo nel tema pubblicato.</s-banner>
+            <s-link href="shopify://admin/themes/current/editor?template=product">Apri l’editor del tema e aggiungi EcoTraceIT Badge</s-link>
+          </>
+        )}
       </s-section>
     </s-page>
   );

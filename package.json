@@ -12,7 +12,11 @@
     "setup": "prisma generate && prisma migrate deploy",
     "typecheck": "react-router typegen && tsc --noEmit",
     "test": "vitest run",
-    "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint ."
+    "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "gitnexus:analyze": "node scripts/gitnexus-docker.mjs analyze --force",
+    "gitnexus:status": "node scripts/gitnexus-docker.mjs list",
+    "gitnexus:wiki": "node scripts/gitnexus-docker.mjs wiki",
+    "gitnexus:clean": "node scripts/gitnexus-docker.mjs clean"
   },
   "engines": {
     "node": "24.x"

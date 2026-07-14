@@ -28,21 +28,25 @@ model Session {
 }
 
 model ShopSettings {
-  shop                 String                  @id
-  locale               String                  @default("it")
-  plan                 String                  @default("free")
-  carbonPricePerKg     Float                   @default(0.30)
-  carbonNeutralEnabled Boolean                 @default(false)
-  checkoutBadgeEnabled Boolean                 @default(true)
-  defaultCarrier       String                  @default("standard")
-  monthlyOrderLimit    Int                     @default(100)
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
+  shop                 String                   @id
+  locale               String                   @default("it")
+  plan                 String                   @default("free")
+  carbonPricePerKg     Float                    @default(0.30)
+  carbonNeutralEnabled Boolean                  @default(false)
+  checkoutBadgeEnabled Boolean                  @default(true)
+  defaultCarrier       String                   @default("standard")
+  monthlyOrderLimit    Int                      @default(100)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
   orders               SustainabilityOrder[]
   complianceOperator   ComplianceOperator?
   packagingProfiles    PackagingProfile[]
   reusableUnits        ReusablePackagingUnit[]
   complianceAuditLogs  ComplianceAuditLog[]
+  suppliers            Supplier[]
+  laboratories         TestingLaboratory[]
+  conaiClassifications ConaiClassification[]
+  manufacturer         ManufacturerResponsible?
 }
 
 model SustainabilityOrder {
@@ -138,33 +142,232 @@ model PackagingProfile {
   auditLogs                    ComplianceAuditLog[]
   orders                       SustainabilityOrder[]
   reusableUnits                ReusablePackagingUnit[]
+  supplierDeclarations         SupplierDeclaration[]
+  laboratoryTests              LaboratoryTest[]
+  declarationSignature         DeclarationSignature?
 
   @@unique([shop, uniqueIdentifier, version])
   @@index([shop, status])
 }
 
 model PackagingComponent {
-  id                     String           @id @default(cuid())
+  id                     String                @id @default(cuid())
   profileId              String
-  profile                PackagingProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile                PackagingProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   materialCode           String
   materialName           String
   function               String
   weightGrams            Float
-  recycledContentPercent Float            @default(0)
-  postConsumerPercent    Float            @default(0)
+  recycledContentPercent Float                 @default(0)
+  postConsumerPercent    Float                 @default(0)
   recyclingStream        String
-  separable              Boolean          @default(true)
+  separable              Boolean               @default(true)
   supplierName           String?
   supplierDeclarationRef String?
+  supplierId             String?
+  supplier               Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   substancesOfConcern    String?
   conaiMaterial          String?
   conaiContributionBand  String?
-  packagingType          String?          @default("SECONDARY_TERTIARY")
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
+  packagingType          String?               @default("SECONDARY_TERTIARY")
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  supplierDeclarations   SupplierDeclaration[]
+  laboratoryTests        LaboratoryTest[]
+  conaiClassification    ConaiClassification?
 
   @@index([profileId])
+  @@index([supplierId])
+}
+
+model Supplier {
+  id                      String                @id @default(cuid())
+  shop                    String
+  settings                ShopSettings          @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  supplierCode            String
+  legalName               String
+  tradeName               String?
+  vatNumber               String?
+  countryCode             String                @default("IT")
+  streetAddress           String?
+  postalCode              String?
+  city                    String?
+  contactName             String?
+  contactEmail            String?
+  contactPhone            String?
+  website                 String?
+  eprRegistrationNumber   String?
+  reachDeclarationRef     String?
+  foodContactRegistration String?
+  status                  String                @default("PENDING")
+  approvedBy              String?
+  approvedAt              DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  components              PackagingComponent[]
+  declarations            SupplierDeclaration[]
+
+  @@unique([shop, supplierCode])
+  @@index([shop, status])
+}
+
+model SupplierDeclaration {
+  id              String              @id @default(cuid())
+  supplierId      String
+  supplier        Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  profileId       String
+  profile         PackagingProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  componentId     String?
+  component       PackagingComponent? @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  declarationType String
+  title           String
+  reference       String
+  status          String              @default("DRAFT")
+  issuedAt        DateTime?
+  expiresAt       DateTime?
+  sourceUrl       String?
+  sha256          String?
+  notes           String?
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([profileId, reference])
+  @@index([supplierId])
+  @@index([profileId, status])
+  @@index([componentId])
+}
+
+model TestingLaboratory {
+  id                  String           @id @default(cuid())
+  shop                String
+  settings            ShopSettings     @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  laboratoryCode      String
+  legalName           String
+  countryCode         String           @default("IT")
+  accreditationBody   String
+  accreditationNumber String
+  accreditationScope  String
+  contactEmail        String?
+  website             String?
+  status              String           @default("PENDING")
+  approvedBy          String?
+  approvedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  tests               LaboratoryTest[]
+
+  @@unique([shop, laboratoryCode])
+  @@index([shop, status])
+}
+
+model LaboratoryTest {
+  id                 String              @id @default(cuid())
+  profileId          String
+  profile            PackagingProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  componentId        String?
+  component          PackagingComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
+  laboratoryId       String
+  laboratory         TestingLaboratory   @relation(fields: [laboratoryId], references: [id], onDelete: Restrict)
+  testType           String
+  reportNumber       String
+  title              String
+  standardReference  String
+  method             String
+  sampleReference    String
+  batchNumber        String?
+  resultStatus       String
+  resultSummary      String
+  measuredValues     Json?
+  issuedAt           DateTime
+  expiresAt          DateTime?
+  sourceUrl          String
+  sha256             String
+  verificationStatus String              @default("PENDING")
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([profileId, reportNumber])
+  @@index([profileId, verificationStatus])
+  @@index([componentId])
+  @@index([laboratoryId])
+}
+
+model ConaiClassification {
+  id                      String             @id @default(cuid())
+  shop                    String
+  settings                ShopSettings       @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  componentId             String             @unique
+  component               PackagingComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  materialFamily          String
+  conaiMaterialCode       String
+  contributionBand        String?
+  environmentalClass      String?
+  packagingType           String
+  contributionEurPerTonne Float?
+  validFrom               DateTime
+  validTo                 DateTime?
+  sourceReference         String
+  sourceUrl               String?
+  classificationStatus    String             @default("DRAFT")
+  classifiedBy            String?
+  classifiedAt            DateTime?
+  notes                   String?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+
+  @@index([shop, materialFamily, contributionBand])
+  @@index([shop, classificationStatus])
+}
+
+model ManufacturerResponsible {
+  id                         String                 @id @default(cuid())
+  shop                       String                 @unique
+  settings                   ShopSettings           @relation(fields: [shop], references: [shop], onDelete: Cascade)
+  manufacturerLegalName      String
+  vatNumber                  String?
+  eoriNumber                 String?
+  streetAddress              String
+  postalCode                 String
+  city                       String
+  countryCode                String                 @default("IT")
+  responsibleName            String
+  responsibleRole            String
+  responsibleEmail           String
+  authorityBasis             String
+  identityVerificationMethod String                 @default("SHOPIFY_ADMIN_ATTESTATION")
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+  signatures                 DeclarationSignature[]
+}
+
+model DeclarationSignature {
+  id                String                  @id @default(cuid())
+  profileId         String                  @unique
+  profile           PackagingProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  responsibleId     String
+  responsible       ManufacturerResponsible @relation(fields: [responsibleId], references: [id], onDelete: Restrict)
+  declarationNumber String
+  signerName        String
+  signerRole        String
+  signerEmail       String
+  signatureMethod   String                  @default("ELECTRONIC_ATTESTATION")
+  typedSignature    String
+  attestationText   String
+  statementVersion  String
+  payload           Json
+  payloadSha256     String
+  actorSessionId    String?
+  signedAt          DateTime                @default(now())
+  revokedAt         DateTime?
+  revocationReason  String?
+  createdAt         DateTime                @default(now())
+
+  @@index([responsibleId, signedAt])
+  @@index([declarationNumber])
 }
 
 model ComplianceEvidence {

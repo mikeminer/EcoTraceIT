@@ -20,6 +20,7 @@ export default function App() {
       <s-app-nav>
         <s-link href="/app">{t.navDashboard}</s-link>
         <s-link href="/app/ppwr">PPWR</s-link>
+        <s-link href="/app/supply-chain">Fornitori e prove</s-link>
         <s-link href="/app/reuse">Riuso</s-link>
         <s-link href="/app/epr">EPR / CONAI</s-link>
         <s-link href="/app/settings">{t.navSettings}</s-link>

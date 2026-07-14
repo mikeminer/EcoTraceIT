@@ -25,13 +25,13 @@ Fonti normative:
 | Articoli 10 e 24 | Dimensioni, volume, peso, minimizzazione e calcolo automatico dello spazio vuoto |
 | Articolo 11 | Monouso/riutilizzabile, serializzazione, cicli, ritorno, ispezione e fine vita |
 | Articolo 12 | Stato etichetta e artwork verificabile |
-| Articolo 15 | Identificativo univoco e versione per la tracciabilità |
+| Articolo 15 | Identificativo univoco, versione, fornitori approvati e dichiarazioni strutturate per la tracciabilità |
 | Allegato VII | Componenti, disegni, rischi, controlli, norme, specifiche e rapporti di prova |
-| Articolo 39 / Allegato VIII | Firma bloccante e dichiarazione UE stampabile |
+| Articolo 39 / Allegato VIII | Responsabile del fabbricante, attestazione elettronica, snapshot SHA-256, revoca e dichiarazione UE stampabile |
 | Conservazione | Scadenza calcolata a 5 anni per monouso e 10 anni per riutilizzabile |
 | Audit | Registro append-only delle azioni rilevanti |
 | Ordini Shopify | Collegamento al dossier dichiarato e right-sizing dalle dimensioni prodotto |
-| EPR / CONAI | Aggregazione per materiale, peso, riciclato, fascia e tipologia; CSV mensile |
+| EPR / CONAI | Classificazione strutturata per componente con fonte e validità; aggregazione per materiale, peso, riciclato, fascia e tipologia; CSV mensile |
 | Corrieri | Tracking DHL MyDHL e FedEx REST con fallback manuale per altri vettori |
 
 ## Stati del fascicolo
@@ -46,14 +46,16 @@ EcoTraceIT non usa una percentuale come certificato. Il punteggio misura soltant
 
 1. Aprire **PPWR** dalla navigazione dell'app.
 2. Registrare l'operatore economico e selezionare il ruolo effettivo nella catena di fornitura.
-3. Creare un profilo per ogni tipo e versione di imballaggio.
-4. Inserire tutti i componenti. La somma delle masse deve coincidere con il peso totale entro la tolleranza del 2% o 1 grammo.
-5. Inserire volume del prodotto e dimensioni interne utili. EcoTraceIT calcola volume e spazio vuoto.
-6. Registrare evidenze con riferimento, emittente, scadenza, URL HTTPS e hash SHA-256 quando disponibile.
-7. Completare analisi rischi, minimizzazione, controlli di fabbricazione e specifiche applicate.
-8. Eseguire la valutazione. Ogni controllo fallito mostra l'azione correttiva richiesta.
-9. Il fabbricante verifica i risultati e firma assumendosi esplicitamente la responsabilità.
-10. Scaricare il fascicolo JSON e stampare/salvare in PDF la dichiarazione UE.
+3. In **Fornitori e prove**, registrare il fabbricante, il responsabile autorizzato, i fornitori e i laboratori accreditati.
+4. Creare un profilo per ogni tipo e versione di imballaggio.
+5. Inserire tutti i componenti e collegarli ai fornitori. La somma delle masse deve coincidere con il peso totale entro la tolleranza del 2% o 1 grammo.
+6. Inserire dichiarazioni dei fornitori, prove di laboratorio e classificazioni CONAI verificabili.
+7. Inserire volume del prodotto e dimensioni interne utili. EcoTraceIT calcola volume e spazio vuoto.
+8. Registrare le altre evidenze con riferimento, emittente, scadenza, URL HTTPS e hash SHA-256 quando disponibile.
+9. Completare analisi rischi, minimizzazione, controlli di fabbricazione e specifiche applicate.
+10. Eseguire la valutazione. Ogni controllo fallito mostra l'azione correttiva richiesta.
+11. Il responsabile del fabbricante verifica lo snapshot e registra l'attestazione elettronica assumendosi esplicitamente la responsabilità.
+12. Scaricare il fascicolo JSON e stampare/salvare in PDF la dichiarazione UE.
 
 ## Associazione agli ordini
 
@@ -82,7 +84,7 @@ Un'evidenza scaduta non soddisfa il controllo. I file restano presso il sistema 
 
 ## Database e deploy
 
-La migrazione `20260714090000_ppwr_compliance` aggiunge soltanto tabelle e colonne nullable. Prima del deploy:
+Le migrazioni `20260714090000_ppwr_compliance` e `20260714103000_supply_chain_evidence` aggiungono il workspace PPWR e i registri strutturati di filiera. Prima del deploy:
 
 ```bash
 npm run setup
@@ -117,7 +119,9 @@ La pagina **Riuso** registra ogni unità con seriale o QR e applica transizioni 
 
 ## EPR / CONAI
 
-La pagina **EPR / CONAI** e l'endpoint autenticato `/api/epr` esportano un CSV con separatore `;`, aggregato per codice materiale, materiale CONAI, fascia contributiva e tipologia di imballaggio. Sono inclusi peso immesso, quota riciclata, post-consumo e unità riutilizzabili. Le fasce e la posizione consortile devono essere validate dal merchant: EcoTraceIT non calcola automaticamente il CAC perché aliquote, decorrenze, esenzioni e procedure possono cambiare.
+La pagina **EPR / CONAI** e l'endpoint autenticato `/api/epr` esportano un CSV con separatore `;`, aggregato per codice materiale, materiale CONAI, fascia contributiva e tipologia di imballaggio. Sono inclusi fonte, stato di verifica, aliquota indicata, peso immesso, quota riciclata, post-consumo e unità riutilizzabili. Le fasce e la posizione consortile devono essere validate dal merchant: EcoTraceIT conserva la classificazione applicata ma non certifica automaticamente CAC, decorrenze, esenzioni o procedure.
+
+Dettagli su fornitori, laboratori, snapshot e firma: [`SUPPLY-CHAIN-EVIDENCE.md`](SUPPLY-CHAIN-EVIDENCE.md).
 
 ## Right-sizing e dimensioni prodotto
 

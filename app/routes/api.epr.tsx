@@ -17,7 +17,7 @@ export async function loader({request}: LoaderFunctionArgs) {
   const {from, to} = parsePeriod(new URL(request.url));
   const orders = await prisma.sustainabilityOrder.findMany({where: {shop: session.shop, calculatedAt: {gte: from, lte: to}}, select: {packagingProfileId: true, calculatedAt: true}});
   const profileIds = [...new Set(orders.flatMap((order) => order.packagingProfileId ? [order.packagingProfileId] : []))];
-  const profiles = await prisma.packagingProfile.findMany({where: {shop: session.shop, id: {in: profileIds}}, include: {components: true}});
+  const profiles = await prisma.packagingProfile.findMany({where: {shop: session.shop, id: {in: profileIds}}, include: {components: {include: {conaiClassification: true}}}});
   const report = aggregateEpr(orders, profiles);
   const format = new URL(request.url).searchParams.get("format");
   if (format === "json") return Response.json({period: {from, to}, ...report, disclaimer: "Dataset operativo di supporto: verificare classificazioni e obblighi con CONAI/professionista."});
