@@ -93,7 +93,7 @@ npm run typecheck
 npm run build
 ```
 
-Il deploy Vercel deve eseguire `prisma migrate deploy` usando `DATABASE_URL` PostgreSQL. Eseguire backup e prova della migrazione in preview prima della produzione.
+Eseguire `prisma migrate deploy` una sola volta in un job di release controllato, preferibilmente con una connessione PostgreSQL diretta, prima di pubblicare codice che dipende dal nuovo schema. La build Vercel non esegue migrazioni: avviarle in ogni build tramite una connessione in pooling può lasciare occupato l'advisory lock di Prisma. Eseguire sempre backup e prova della migrazione in preview prima della produzione.
 
 ## Verifiche che restano esterne
 

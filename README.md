@@ -97,13 +97,9 @@ Non esporre chiavi nelle estensioni, nei TOML o nei metafield.
 
 Shopify ospita le estensioni, non il backend. Il progetto è predisposto per Vercel SSR tramite `@vercel/react-router` e PostgreSQL Neon. Le variabili sensibili devono restare in Vercel, mai nel repository.
 
-```powershell
-vercel link --yes --scope mikeminers-projects --project ecotraceit
-vercel env pull .env.local --environment=production --yes
-$env:DATABASE_URL = (Get-Content .env.local | Select-String '^DATABASE_URL=').Line.Split('=', 2)[1].Trim('"')
-npm run setup
-vercel deploy --prod
-```
+Il push su `main` avvia automaticamente il deploy di produzione. `vercel.json` esegue solo la build applicativa: le migrazioni non devono partire in parallelo durante le build Vercel usando una connessione PostgreSQL in pooling, perché l'advisory lock di Prisma può restare associato alla connessione del pool.
+
+Quando una release contiene una nuova migrazione, eseguire `npm run setup` una sola volta in un job di release controllato, preferibilmente con una connessione PostgreSQL diretta, quindi pubblicare il codice. Per le release senza modifiche allo schema non è richiesta alcuna operazione sul database.
 
 Il deploy produzione usa `https://app.ecotraceit.com`. Su Register.it configurare il record `A` con host `app` e valore `76.76.21.21`, quindi verificare lo stato con `vercel domains inspect app.ecotraceit.com`.
 
