@@ -10,8 +10,11 @@ import {getCopy} from "../i18n";
 
 export const loader = async ({request}: LoaderFunctionArgs) => {
   const {session} = await authenticate.admin(request);
-  const settings = await prisma.shopSettings.upsert({where: {shop: session.shop}, create: {shop: session.shop}, update: {}});
-  return {dashboard: await getDashboard(session.shop), settings};
+  const [settings, dashboard] = await Promise.all([
+    prisma.shopSettings.upsert({where: {shop: session.shop}, create: {shop: session.shop}, update: {}}),
+    getDashboard(session.shop),
+  ]);
+  return {dashboard, settings, currentMonth: new Date().toISOString().slice(0, 7)};
 };
 
 const kg = (value: number) => value.toLocaleString("it-IT", {maximumFractionDigits: 2});
@@ -25,10 +28,9 @@ function activationStatus(value: unknown): ThemeBadgeStatus {
 
 export default function Dashboard() {
   const shopify = useAppBridge();
-  const {dashboard, settings} = useLoaderData<typeof loader>();
+  const {dashboard, settings, currentMonth} = useLoaderData<typeof loader>();
   const [themeBadgeStatus, setThemeBadgeStatus] = useState<ThemeBadgeStatus>("loading");
   const t = getCopy(settings.locale);
-  const currentMonth = new Date().toISOString().slice(0, 7);
   const monthlyUsage = dashboard.monthly.find((row) => row.month === currentMonth)?.orders || 0;
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function Dashboard() {
 
   return (
     <s-page heading="EcoTraceIT">
-      <s-button slot="primary-action" href="/app/settings">{t.configure}</s-button>
+      <s-button slot="primary-action" href="/app/settings" variant="primary">{t.configure}</s-button>
       <s-section heading={t.impact}>
         <s-grid gridTemplateColumns="repeat(3, minmax(0, 1fr))" gap="base">
           <s-box padding="base" background="subdued" borderRadius="base">

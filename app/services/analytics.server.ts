@@ -3,11 +3,32 @@ import prisma from "../db.server";
 export async function getDashboard(shop: string, months = 6) {
   const from = new Date();
   from.setMonth(from.getMonth() - months);
-  const orders = await prisma.sustainabilityOrder.findMany({
-    where: {shop, calculatedAt: {gte: from}},
-    include: {productStats: true},
-    orderBy: {calculatedAt: "asc"},
-  });
+  const [orders, productGroups, categoryGroups] = await Promise.all([
+    prisma.sustainabilityOrder.findMany({
+      where: {shop, calculatedAt: {gte: from}},
+      select: {
+        emissionsKg: true,
+        savingsKg: true,
+        offsetAmount: true,
+        calculatedAt: true,
+      },
+      orderBy: {calculatedAt: "asc"},
+    }),
+    prisma.productStat.groupBy({
+      by: ["title"],
+      where: {order: {shop, calculatedAt: {gte: from}}},
+      _sum: {allocatedEmissionsKg: true, quantity: true},
+      orderBy: {_sum: {allocatedEmissionsKg: "desc"}},
+      take: 10,
+    }),
+    prisma.productStat.groupBy({
+      by: ["category"],
+      where: {order: {shop, calculatedAt: {gte: from}}},
+      _sum: {allocatedEmissionsKg: true, quantity: true},
+      orderBy: {_sum: {allocatedEmissionsKg: "desc"}},
+      take: 10,
+    }),
+  ]);
   const totals = orders.reduce(
     (sum, order) => ({
       emissions: sum.emissions + order.emissionsKg,
@@ -25,24 +46,19 @@ export async function getDashboard(shop: string, months = 6) {
     row.orders += 1;
     monthMap.set(key, row);
   }
-  const products = new Map<string, {title: string; emissions: number; quantity: number}>();
-  const categories = new Map<string, {category: string; emissions: number; quantity: number}>();
-  for (const stat of orders.flatMap((order) => order.productStats)) {
-    const row = products.get(stat.title) || {title: stat.title, emissions: 0, quantity: 0};
-    row.emissions += stat.allocatedEmissionsKg;
-    row.quantity += stat.quantity;
-    products.set(stat.title, row);
-    const categoryName = stat.category || "Non categorizzato";
-    const category = categories.get(categoryName) || {category: categoryName, emissions: 0, quantity: 0};
-    category.emissions += stat.allocatedEmissionsKg;
-    category.quantity += stat.quantity;
-    categories.set(categoryName, category);
-  }
   return {
     totals,
     orderCount: orders.length,
     monthly: [...monthMap.values()],
-    products: [...products.values()].sort((a, b) => b.emissions - a.emissions).slice(0, 10),
-    categories: [...categories.values()].sort((a, b) => b.emissions - a.emissions).slice(0, 10),
+    products: productGroups.map((group) => ({
+      title: group.title,
+      emissions: group._sum.allocatedEmissionsKg || 0,
+      quantity: group._sum.quantity || 0,
+    })),
+    categories: categoryGroups.map((group) => ({
+      category: group.category || "Non categorizzato",
+      emissions: group._sum.allocatedEmissionsKg || 0,
+      quantity: group._sum.quantity || 0,
+    })),
   };
 }
