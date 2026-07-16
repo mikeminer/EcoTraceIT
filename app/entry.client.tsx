@@ -2,19 +2,18 @@ import {StrictMode, startTransition} from "react";
 import {hydrateRoot} from "react-dom/client";
 import {HydratedRouter} from "react-router/dom";
 
-const elementShape = (element: Element | null) => element ? {
-  attributes: [...element.attributes].map((attribute) => attribute.name),
-  children: [...element.children].map((child) => ({
-    tag: child.tagName,
-    attributes: [...child.attributes].map((attribute) => attribute.name),
-  })),
-} : null;
+const removeInjectedExtensionNodes = () => {
+  document
+    .querySelectorAll<HTMLElement>(
+      'script[src^="chrome-extension://"], link[href^="chrome-extension://"]',
+    )
+    .forEach((node) => node.remove());
+};
 
-console.error("EcoTraceIT prehydrate shape", JSON.stringify({
-  html: elementShape(document.documentElement),
-  head: elementShape(document.head),
-  body: elementShape(document.body),
-}));
+// Wallet extensions can inject nodes directly under <html> before React starts.
+// Removing only extension-owned bootstrap nodes preserves the server DOM and
+// prevents React from discarding the whole embedded app during hydration.
+removeInjectedExtensionNodes();
 
 startTransition(() => {
   hydrateRoot(
@@ -22,10 +21,5 @@ startTransition(() => {
     <StrictMode>
       <HydratedRouter />
     </StrictMode>,
-    {
-      onRecoverableError(error, errorInfo) {
-        console.error("EcoTraceIT hydration recovery", error, errorInfo.componentStack);
-      },
-    },
   );
 });
