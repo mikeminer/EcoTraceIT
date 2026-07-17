@@ -108,23 +108,40 @@ export async function processOrder(shop: string, payload: ShopifyOrder, admin?: 
     const productIds = [...new Set(lines.flatMap((line) => line.product_id ? ["gid://shopify/Product/" + line.product_id] : []))];
     if (productIds.length) {
       const categoryResponse = await graphql(
-        `query EcoTraceITProductCategories($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id productType category { fullName } metafields(identifiers: [{namespace: "$app:ecotraceit", key: "length_mm"}, {namespace: "$app:ecotraceit", key: "width_mm"}, {namespace: "$app:ecotraceit", key: "height_mm"}]) { key value } } } }`,
+        `query EcoTraceITProductCategories($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id
+              productType
+              category { fullName }
+              length: metafield(namespace: "$app:ecotraceit", key: "length_mm") { value }
+              width: metafield(namespace: "$app:ecotraceit", key: "width_mm") { value }
+              height: metafield(namespace: "$app:ecotraceit", key: "height_mm") { value }
+            }
+          }
+        }`,
         {variables: {ids: productIds}},
       );
       const categoryJson = await categoryResponse.json() as {
-        data?: {nodes?: Array<{id?: string; productType?: string; category?: {fullName?: string}; metafields?: Array<{key: string; value: string} | null>} | null>};
+        data?: {nodes?: Array<{
+          id?: string;
+          productType?: string;
+          category?: {fullName?: string};
+          length?: {value?: string} | null;
+          width?: {value?: string} | null;
+          height?: {value?: string} | null;
+        } | null>};
         errors?: Array<{message: string}>;
       };
       if (categoryJson.errors?.length) {
         console.warn(JSON.stringify({event: "product_category_lookup_failed", shop, errors: categoryJson.errors}));
       }
       for (const product of categoryJson.data?.nodes || []) {
-if (product?.id) {
+        if (product?.id) {
           productCategories.set(product.id, product.category?.fullName || product.productType || "Non categorizzato");
-          const values = new Map((product.metafields || []).flatMap((item) => item ? [[item.key, Number(item.value)] as const] : []));
-          const lengthMm = values.get("length_mm") || 0;
-          const widthMm = values.get("width_mm") || 0;
-          const heightMm = values.get("height_mm") || 0;
+          const lengthMm = Number(product.length?.value) || 0;
+          const widthMm = Number(product.width?.value) || 0;
+          const heightMm = Number(product.height?.value) || 0;
           if (lengthMm > 0 && widthMm > 0 && heightMm > 0) productDimensions.set(product.id, {lengthMm, widthMm, heightMm});
         }
       }
